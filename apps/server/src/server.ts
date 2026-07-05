@@ -11,6 +11,7 @@ import explorationRoutes from "./modules/exploration/exploration.routes.js";
 import creaturesRoutes from "./modules/creatures/creatures.routes.js";
 import shopRoutes from "./modules/shop/shop.routes.js";
 import leagueRoutes from "./modules/league/league.routes.js";
+import marketRoutes from "./modules/market/market.routes.js";
 
 const fastify = Fastify({ logger: true });
 
@@ -27,6 +28,7 @@ try {
   await fastify.register(creaturesRoutes, { prefix: "/api" });
   await fastify.register(shopRoutes, { prefix: "/api" });
   await fastify.register(leagueRoutes, { prefix: "/api" });
+  await fastify.register(marketRoutes, { prefix: "/api" });
 
   fastify.get("/api/health", async () => ({ status: "ok" }));
 

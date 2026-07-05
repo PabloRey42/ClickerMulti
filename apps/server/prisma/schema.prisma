@@ -21,6 +21,7 @@ model User {
   inventoryItems  PlayerInventoryItem[]
   leagueProgress  PlayerLeagueProgress?
   specializations PlayerSpecialization[]
+  marketListings  MarketListing[]
 }
 
 /// Core player state: gold and combo momentum for the click-to-attack battle loop.
@@ -49,17 +50,18 @@ model RefreshToken {
 /// A creature a player owns, caught via a wild encounter. speciesKey references the
 /// static SPECIES_CATALOG in @farm-clicker/shared, not a DB row.
 model PlayerCreature {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  speciesKey String
-  nickname   String?
-  level      Int      @default(1)
-  xp         Int      @default(0)
-  currentHp  Int
-  isOnTeam   Boolean  @default(false)
-  isActive   Boolean  @default(false)
-  caughtAt   DateTime @default(now())
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciesKey     String
+  nickname       String?
+  level          Int             @default(1)
+  xp             Int             @default(0)
+  currentHp      Int
+  isOnTeam       Boolean         @default(false)
+  isActive       Boolean         @default(false)
+  caughtAt       DateTime        @default(now())
+  marketListings MarketListing[]
 
   @@index([userId])
 }
@@ -113,4 +115,37 @@ model PlayerInventoryItem {
 
   @@unique([userId, itemKey])
   @@index([userId])
+}
+
+enum MarketAssetType {
+  ITEM
+  CREATURE
+}
+
+enum MarketListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+/// A gold-priced listing for an item stack or a single creature. Items are escrowed
+/// (deducted) on listing and refunded on cancel; creatures stay usable by their owner
+/// while listed and transfer atomically on sale.
+model MarketListing {
+  id           String              @id @default(cuid())
+  sellerId     String
+  seller       User                @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  buyerId      String?
+  assetType    MarketAssetType
+  itemKey      String?
+  quantity     Int?
+  creatureId   String?
+  creature     PlayerCreature?     @relation(fields: [creatureId], references: [id], onDelete: SetNull)
+  askGoldPrice BigInt
+  status       MarketListingStatus @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  soldAt       DateTime?
+
+  @@index([sellerId])
+  @@index([status])
 }

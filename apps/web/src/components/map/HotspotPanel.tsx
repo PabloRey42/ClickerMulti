@@ -16,6 +16,7 @@ interface HotspotPanelProps {
   onEnterRoute: (hotspot: CityMapHotspot) => void;
   onHeal: () => void;
   onOpenShop: () => void;
+  onOpenMarket: () => void;
 }
 
 export function HotspotPanel({
@@ -26,6 +27,7 @@ export function HotspotPanel({
   onEnterRoute,
   onHeal,
   onOpenShop,
+  onOpenMarket,
 }: HotspotPanelProps) {
   const isEncounterZone = hotspot.kind === "route" || hotspot.kind === "dungeon";
 
@@ -52,9 +54,14 @@ export function HotspotPanel({
           </button>
         )}
         {hotspot.kind === "poi" && hotspot.action === "shop" && (
-          <button type="button" className="btn-primary" onClick={onOpenShop}>
-            Ouvrir la boutique
-          </button>
+          <>
+            <button type="button" className="btn-primary" onClick={onOpenShop}>
+              Ouvrir la boutique
+            </button>
+            <button type="button" className="btn-primary" onClick={onOpenMarket} style={{ marginTop: 8 }}>
+              Ouvrir l'Hôtel des Ventes
+            </button>
+          </>
         )}
 
         <button type="button" className="btn-link" onClick={onClose} style={{ marginTop: 12 }}>

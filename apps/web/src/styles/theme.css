@@ -776,3 +776,41 @@ body {
   }
 }
 
+.market-panel {
+  max-width: 560px;
+  text-align: left;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+.market-sell-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.market-sell-form select,
+.market-sell-form input {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px;
+  border: 2px solid var(--poke-blue-dark);
+  border-radius: 8px;
+}
+
+.market-sell-form select {
+  flex: 1;
+  min-width: 140px;
+}
+
+.market-sell-form input[type="number"] {
+  width: 80px;
+}
+
+.market-listing-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+

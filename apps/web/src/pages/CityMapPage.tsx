@@ -3,6 +3,7 @@ import { CITY_MAPS, type CityMapHotspot } from "@farm-clicker/shared";
 import { MapView } from "../components/map/MapView";
 import { HotspotPanel } from "../components/map/HotspotPanel";
 import { ShopPanel } from "../components/map/ShopPanel";
+import { MarketPanel } from "../components/map/MarketPanel";
 import { useExplorationStore } from "../state/explorationStore";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
@@ -31,6 +32,7 @@ export function CityMapPage({ cityId }: { cityId: string }) {
   const refreshTeamSidebar = useTeamStore((s) => s.refresh);
   const [selected, setSelected] = useState<CityMapHotspot | null>(null);
   const [showShop, setShowShop] = useState(false);
+  const [showMarket, setShowMarket] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cityMap = CITY_MAPS[cityId];
@@ -120,10 +122,15 @@ export function CityMapPage({ cityId }: { cityId: string }) {
             setSelected(null);
             setShowShop(true);
           }}
+          onOpenMarket={() => {
+            setSelected(null);
+            setShowMarket(true);
+          }}
         />
       )}
 
       {showShop && <ShopPanel onClose={() => setShowShop(false)} />}
+      {showMarket && <MarketPanel onClose={() => setShowMarket(false)} />}
     </div>
   );
 }

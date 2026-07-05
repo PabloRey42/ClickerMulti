@@ -3,6 +3,7 @@ export * from "./types/creature.js";
 export * from "./types/exploration.js";
 export * from "./types/shop.js";
 export * from "./types/league.js";
+export * from "./types/market.js";
 export * from "./game/combo.js";
 export * from "./game/battle.js";
 export * from "./game/pokeballs.js";
