@@ -215,7 +215,7 @@ export function AdminPage() {
                 <input
                   type="number"
                   min="1"
-                  max="999"
+                  max="100"
                   value={creatureLevel}
                   onChange={(e) => setCreatureLevel(e.target.value)}
                   placeholder="Niveau"

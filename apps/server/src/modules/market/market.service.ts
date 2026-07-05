@@ -2,6 +2,7 @@ import type { PrismaClient, MarketListing, MarketAssetType } from "@prisma/clien
 import {
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
+  MAX_SAME_SPECIES_OWNED,
   type MarketListingView,
   type MarketListingsResponse,
 } from "@farm-clicker/shared";
@@ -16,6 +17,7 @@ export class InvalidListingError extends Error {}
 export class ListingNotFoundError extends Error {}
 export class CannotBuyOwnListingError extends Error {}
 export class InsufficientGoldError extends Error {}
+export class DuplicateSpeciesLimitError extends Error {}
 
 interface CreateListingInput {
   assetType: MarketAssetType;
@@ -182,6 +184,12 @@ export async function buyListing(
     });
 
     if (listing.assetType === "CREATURE" && listing.creatureId) {
+      const creature = await tx.playerCreature.findUniqueOrThrow({ where: { id: listing.creatureId } });
+      const ownedCount = await tx.playerCreature.count({
+        where: { userId: buyerId, speciesKey: creature.speciesKey },
+      });
+      if (ownedCount >= MAX_SAME_SPECIES_OWNED) throw new DuplicateSpeciesLimitError();
+
       await tx.playerCreature.update({
         where: { id: listing.creatureId },
         data: { userId: buyerId, isActive: false, isOnTeam: false },

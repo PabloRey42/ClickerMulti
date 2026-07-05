@@ -23,6 +23,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   listing_not_found: "Cette annonce n'existe plus.",
   cannot_buy_own_listing: "Tu ne peux pas acheter ta propre annonce.",
   insufficient_gold: "Tu n'as pas assez d'or.",
+  duplicate_species_limit: "Tu possèdes déjà 2 exemplaires de ce Pokémon.",
 };
 
 const inputClass =

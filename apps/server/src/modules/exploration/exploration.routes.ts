@@ -21,6 +21,7 @@ import {
   InsufficientPokeballsError,
   AutoHealLockedError,
   AutoCaptureLockedError,
+  DuplicateSpeciesLimitError,
 } from "./exploration.service.js";
 
 const routeParamsSchema = z.object({ routeKey: z.string().min(1) });
@@ -92,6 +93,9 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
         }
         if (err instanceof InsufficientPokeballsError) {
           return reply.code(409).send({ error: "insufficient_pokeballs" });
+        }
+        if (err instanceof DuplicateSpeciesLimitError) {
+          return reply.code(409).send({ error: "duplicate_species_limit" });
         }
         throw err;
       }

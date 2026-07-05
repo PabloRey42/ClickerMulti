@@ -14,6 +14,7 @@ import {
   ListingNotFoundError,
   CannotBuyOwnListingError,
   InsufficientGoldError,
+  DuplicateSpeciesLimitError,
 } from "./market.service.js";
 
 const listingParamsSchema = z.object({ id: z.string().min(1) });
@@ -71,6 +72,9 @@ export default async function marketRoutes(fastify: FastifyInstance) {
           return reply.code(409).send({ error: "cannot_buy_own_listing" });
         }
         if (err instanceof InsufficientGoldError) return reply.code(409).send({ error: "insufficient_gold" });
+        if (err instanceof DuplicateSpeciesLimitError) {
+          return reply.code(409).send({ error: "duplicate_species_limit" });
+        }
         throw err;
       }
     },

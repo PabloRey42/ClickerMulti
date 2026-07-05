@@ -10,3 +10,10 @@ export const COMBO_STEP_PERCENT = 5;
 
 /** Max creatures a player can field on their team at once (classic Pokémon party size). */
 export const MAX_TEAM_SIZE = 6;
+
+/** No creature can level past this, ever (level-up, capture, admin gift — all sources). */
+export const MAX_LEVEL = 100;
+
+/** A player can never own more than this many of the same species at once (capture, auto-
+ * capture, or buying one off the Hôtel des Ventes). Doesn't apply to admin gifts. */
+export const MAX_SAME_SPECIES_OWNED = 2;

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { MAX_LEVEL } from "@farm-clicker/shared";
 import { sendJson } from "../../lib/json.js";
 import { requireAdmin } from "../../lib/admin-auth.js";
 import {
@@ -21,7 +22,7 @@ const creatureParamsSchema = z.object({ userId: z.string().min(1), creatureId: z
 const itemParamsSchema = z.object({ userId: z.string().min(1), itemKey: z.string().min(1) });
 
 const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
-const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(999) });
+const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(MAX_LEVEL) });
 const itemBodySchema = z.object({ quantity: z.number().int().min(0).max(999999) });
 
 export default async function adminRoutes(fastify: FastifyInstance) {

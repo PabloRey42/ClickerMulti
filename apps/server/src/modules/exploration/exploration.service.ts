@@ -19,6 +19,7 @@ import {
   leagueRankBonusMultiplier,
   specializationBonusMultiplier,
   findEncounterHotspot,
+  MAX_SAME_SPECIES_OWNED,
   type EncounterTableEntry,
   type RouteHotspot,
   type DungeonHotspot,
@@ -47,6 +48,7 @@ export class InvalidPokeballError extends Error {}
 export class InsufficientPokeballsError extends Error {}
 export class AutoHealLockedError extends Error {}
 export class AutoCaptureLockedError extends Error {}
+export class DuplicateSpeciesLimitError extends Error {}
 
 /** All species keys, used to deterministically build a League trainer roster for a rank. */
 export const ALL_SPECIES_KEYS = Object.keys(SPECIES_CATALOG);
@@ -200,6 +202,10 @@ async function autoCaptureIfEnabled(
 ): Promise<{ attempted: boolean; captured: boolean }> {
   const playerState = await tx.playerState.findUnique({ where: { userId } });
   if (!playerState?.autoCaptureEnabled) return { attempted: false, captured: false };
+
+  // Already at the species cap — don't waste balls on a capture that can never land.
+  const ownedCount = await tx.playerCreature.count({ where: { userId, speciesKey: encounter.speciesKey } });
+  if (ownedCount >= MAX_SAME_SPECIES_OWNED) return { attempted: true, captured: false };
 
   const ballsByCheapest = Object.values(POKEBALL_CATALOG).sort((a, b) => Number(a.goldCost - b.goldCost));
   let anyBallThrown = false;
@@ -450,6 +456,9 @@ export async function captureEncounter(
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
+
+    const ownedCount = await tx.playerCreature.count({ where: { userId, speciesKey: encounter.speciesKey } });
+    if (ownedCount >= MAX_SAME_SPECIES_OWNED) throw new DuplicateSpeciesLimitError();
 
     const inventory = await tx.playerInventoryItem.findUnique({
       where: { userId_itemKey: { userId, itemKey: pokeballKey } },

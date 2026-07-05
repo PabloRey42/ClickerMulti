@@ -183,7 +183,13 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       triggerLevelUp(result.leveledUp);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) logout();
+      if (err instanceof ApiError) {
+        if (err.status === 401) return logout();
+        const body = err.body as { error?: string } | undefined;
+        if (body?.error === "duplicate_species_limit") {
+          setMessage("Tu possèdes déjà 2 exemplaires de ce Pokémon.");
+        }
+      }
     } finally {
       setActing(false);
     }

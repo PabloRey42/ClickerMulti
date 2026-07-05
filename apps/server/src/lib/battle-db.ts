@@ -1,6 +1,7 @@
 import type { Prisma, PlayerState, PlayerCreature, WildEncounter } from "@prisma/client";
 import {
   SPECIES_CATALOG,
+  MAX_LEVEL,
   creatureMaxHp,
   creatureAttack,
   xpToNextLevel,
@@ -67,7 +68,8 @@ export function buildEncounterView(encounter: WildEncounter): WildEncounterView 
   };
 }
 
-/** Applies XP to a creature, rolling level-ups (and a full heal on each level gained). */
+/** Applies XP to a creature, rolling level-ups (and a full heal on each level gained).
+ * Level never goes past MAX_LEVEL — once there, further XP is simply discarded. */
 export async function applyXpGain(
   tx: Prisma.TransactionClient,
   creature: PlayerCreature,
@@ -75,9 +77,13 @@ export async function applyXpGain(
 ): Promise<{ leveledUp: boolean }> {
   let xp = creature.xp + xpGained;
   let level = creature.level;
-  while (xp >= xpToNextLevel(level)) {
+  while (level < MAX_LEVEL && xp >= xpToNextLevel(level)) {
     xp -= xpToNextLevel(level);
     level += 1;
+  }
+  if (level >= MAX_LEVEL) {
+    level = MAX_LEVEL;
+    xp = 0;
   }
 
   const leveledUp = level > creature.level;

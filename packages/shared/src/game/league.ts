@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { MAX_LEVEL } from "./constants.js";
 
 export const LEAGUE_ROSTER_BASE_SIZE = 3;
 export const LEAGUE_ROSTER_MAX_SIZE = 6;
@@ -19,7 +20,7 @@ export function leagueRosterSize(rank: number): number {
 }
 
 export function leagueOpponentLevel(rank: number): number {
-  return LEAGUE_BASE_LEVEL + rank * LEAGUE_LEVEL_PER_RANK;
+  return Math.min(MAX_LEVEL, LEAGUE_BASE_LEVEL + rank * LEAGUE_LEVEL_PER_RANK);
 }
 
 /** Deterministic given (rank, speciesKeys) so it can be recomputed at any point during a
