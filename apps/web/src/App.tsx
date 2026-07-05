@@ -7,6 +7,7 @@ import { CityMapPage } from "./pages/CityMapPage";
 import { EncounterPage } from "./pages/EncounterPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
+import { TeamSidebar } from "./components/TeamSidebar";
 import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
 
@@ -53,33 +54,37 @@ export function App() {
 
   return (
     <div className="screen">
-      <div className="app-shell">
-        <div className="tabs section-tabs">
-          <button
-            type="button"
-            className={`tab ${section === "explore" ? "tab-active" : ""}`}
-            onClick={() => setSection("explore")}
-          >
-            Explorer
-          </button>
-          <button
-            type="button"
-            className={`tab ${section === "collection" ? "tab-active" : ""}`}
-            onClick={() => setSection("collection")}
-          >
-            Collection
-          </button>
+      <div className="game-layout">
+        <div className="app-shell">
+          <div className="tabs section-tabs">
+            <button
+              type="button"
+              className={`tab ${section === "explore" ? "tab-active" : ""}`}
+              onClick={() => setSection("explore")}
+            >
+              Explorer
+            </button>
+            <button
+              type="button"
+              className={`tab ${section === "collection" ? "tab-active" : ""}`}
+              onClick={() => setSection("collection")}
+            >
+              Collection
+            </button>
+          </div>
+
+          {section === "collection" && <CollectionPage />}
+
+          {section === "explore" && (
+            <div className={`map-transition ${transitioning ? "map-transition-active" : ""}`}>
+              {screen.view === "world" && <WorldMapPage />}
+              {screen.view === "city" && <CityMapPage cityId={screen.cityId} />}
+              {screen.view === "encounter" && <EncounterPage cityId={screen.cityId} />}
+            </div>
+          )}
         </div>
 
-        {section === "collection" && <CollectionPage />}
-
-        {section === "explore" && (
-          <div className={`map-transition ${transitioning ? "map-transition-active" : ""}`}>
-            {screen.view === "world" && <WorldMapPage />}
-            {screen.view === "city" && <CityMapPage cityId={screen.cityId} />}
-            {screen.view === "encounter" && <EncounterPage cityId={screen.cityId} />}
-          </div>
-        )}
+        <TeamSidebar />
       </div>
     </div>
   );

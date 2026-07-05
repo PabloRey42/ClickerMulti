@@ -71,7 +71,7 @@ export async function applyXpGain(
   tx: Prisma.TransactionClient,
   creature: PlayerCreature,
   xpGained: number,
-): Promise<void> {
+): Promise<{ leveledUp: boolean }> {
   let xp = creature.xp + xpGained;
   let level = creature.level;
   while (xp >= xpToNextLevel(level)) {
@@ -84,4 +84,5 @@ export async function applyXpGain(
   const currentHp = leveledUp ? creatureMaxHp(species.baseHp, level) : creature.currentHp;
 
   await tx.playerCreature.update({ where: { id: creature.id }, data: { xp, level, currentHp } });
+  return { leveledUp };
 }

@@ -15,16 +15,20 @@ import {
 import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { TYPE_ACCENT } from "../theme/typeColors";
+import { useTeamStore } from "../state/teamStore";
 
 export function EncounterPage({ cityId }: { cityId: string }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const goToCity = useExplorationStore((s) => s.goToCity);
   const { state, lastHit, hitCount, setState, applyAttack, clear } = useBattleStore();
+  const refreshTeamSidebar = useTeamStore((s) => s.refresh);
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [team, setTeam] = useState<PlayerCreatureView[]>([]);
   const [acting, setActing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [levelUpKey, setLevelUpKey] = useState(0);
+  const [justLeveledUp, setJustLeveledUp] = useState(false);
 
   useEffect(() => {
     if (!accessToken || state) return;
@@ -53,6 +57,11 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       .catch(() => {});
   }, [accessToken, awaitingSwitch]);
 
+  function triggerLevelUp(leveledUp: boolean) {
+    setJustLeveledUp(leveledUp);
+    if (leveledUp) setLevelUpKey((k) => k + 1);
+  }
+
   async function handleAttack() {
     if (!accessToken || acting) return;
     setActing(true);
@@ -63,6 +72,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
       }
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -78,6 +88,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       const refreshed = await getExplorationState(accessToken);
       setState(refreshed);
       setMessage(null);
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -92,6 +103,8 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       const result = await finishEncounter(accessToken);
       setState(result.state);
       setMessage(`+${result.goldGained.toString()} or, +${result.xpGained} XP`);
+      triggerLevelUp(result.leveledUp);
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -111,6 +124,8 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       setMessage(
         result.success ? `${result.creature?.name} capturé !` : "La créature s'est échappée de la balle...",
       );
+      triggerLevelUp(result.leveledUp);
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -197,12 +212,27 @@ export function EncounterPage({ cityId }: { cityId: string }) {
               <span className="hp-label">
                 {creature.currentHp} / {creature.maxHp} PV
               </span>
+              <div className="xp-bar">
+                <div
+                  className="xp-bar-fill"
+                  style={{ width: `${(creature.xp / creature.xpToNextLevel) * 100}%` }}
+                />
+              </div>
+              <span className="hp-label">
+                {creature.xp} / {creature.xpToNextLevel} XP
+              </span>
             </div>
           </div>
         )}
 
         {!encounter && <p className="battle-empty">Aucune créature sauvage ici pour l'instant.</p>}
       </div>
+
+      {justLeveledUp && (
+        <p className="level-up-flash" key={levelUpKey}>
+          🌟 Niveau supérieur !
+        </p>
+      )}
 
       {message && (
         <p className="gain-float" key={`msg-${hitCount}`}>

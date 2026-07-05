@@ -20,10 +20,13 @@ export interface CaptureResponse {
   success: boolean;
   state: ExplorationStateResponse;
   creature: PlayerCreatureView | null;
+  xpGained: number;
+  leveledUp: boolean;
 }
 
 export interface FinishEncounterResponse {
   state: ExplorationStateResponse;
   goldGained: bigint;
   xpGained: number;
+  leveledUp: boolean;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SPECIES_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
+import { useTeamStore } from "../state/teamStore";
 import { listCreatures, activateCreature, setTeamMembership } from "../api/creatures";
 import { ApiError } from "../api/client";
 import { TYPE_ACCENT } from "../theme/typeColors";
@@ -10,6 +11,7 @@ const DEX_ENTRIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - 
 export function CollectionPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
+  const refreshTeamSidebar = useTeamStore((s) => s.refresh);
   const [creatures, setCreatures] = useState<PlayerCreatureView[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export function CollectionPage() {
     setError(null);
     try {
       setCreatures(await setTeamMembership(accessToken, creature.id, !creature.isOnTeam));
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return logout();
       if (err instanceof ApiError && err.status === 409) setError("Ton équipe est déjà complète (6 max).");
@@ -50,6 +53,7 @@ export function CollectionPage() {
     try {
       await activateCreature(accessToken, creature.id);
       await refresh();
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -92,6 +96,15 @@ export function CollectionPage() {
                   </span>
                   <span className="pokedex-instance-meta">
                     Nv.{c.level} · {c.currentHp}/{c.maxHp} PV
+                  </span>
+                  <div className="xp-bar">
+                    <div
+                      className="xp-bar-fill"
+                      style={{ width: `${(c.xp / c.xpToNextLevel) * 100}%` }}
+                    />
+                  </div>
+                  <span className="xp-label">
+                    {c.xp}/{c.xpToNextLevel} XP
                   </span>
                   <div className="pokedex-instance-actions">
                     <button
