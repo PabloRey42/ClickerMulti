@@ -36,6 +36,7 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     id: creature.id,
     speciesKey: creature.speciesKey,
     name: species.name,
+    dexNumber: species.dexNumber,
     elementalType: species.elementalType,
     spriteFile: species.spriteFile,
     nickname: creature.nickname,
@@ -45,6 +46,7 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     currentHp: creature.currentHp,
     maxHp: creatureMaxHp(species.baseHp, creature.level),
     attack: creatureAttack(species.baseAttack, creature.level),
+    isOnTeam: creature.isOnTeam,
     isActive: creature.isActive,
     caughtAt: creature.caughtAt.toISOString(),
   };

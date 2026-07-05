@@ -23,3 +23,11 @@ export function activateCreature(accessToken: string, creatureId: string) {
     accessToken,
   });
 }
+
+export function setTeamMembership(accessToken: string, creatureId: string, onTeam: boolean) {
+  return apiRequest<PlayerCreatureView[]>(`/api/creatures/${creatureId}/team`, {
+    method: "POST",
+    accessToken,
+    body: { onTeam },
+  });
+}

@@ -4,16 +4,20 @@ import { sendJson } from "../../lib/json.js";
 import {
   listCreatures,
   activateCreature,
+  setTeamMembership,
   getStarterOptions,
   chooseStarter,
   CreatureNotFoundError,
   CreatureFaintedError,
+  CreatureNotOnTeamError,
+  TeamFullError,
   InvalidStarterError,
   StarterAlreadyChosenError,
 } from "./creatures.service.js";
 
 const creatureParamsSchema = z.object({ id: z.string().min(1) });
 const chooseStarterSchema = z.object({ speciesKey: z.string().min(1) });
+const teamBodySchema = z.object({ onTeam: z.boolean() });
 
 export default async function creaturesRoutes(fastify: FastifyInstance) {
   fastify.get("/creatures", { preHandler: fastify.authenticate }, async (request, reply) => {
@@ -53,7 +57,27 @@ export default async function creaturesRoutes(fastify: FastifyInstance) {
         sendJson(reply, await activateCreature(fastify.prisma, userId, parsed.data.id));
       } catch (err) {
         if (err instanceof CreatureNotFoundError) return reply.code(404).send({ error: "creature_not_found" });
+        if (err instanceof CreatureNotOnTeamError) return reply.code(409).send({ error: "creature_not_on_team" });
         if (err instanceof CreatureFaintedError) return reply.code(409).send({ error: "creature_fainted" });
+        throw err;
+      }
+    },
+  );
+
+  fastify.post(
+    "/creatures/:id/team",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      const params = creatureParamsSchema.safeParse(request.params);
+      const body = teamBodySchema.safeParse(request.body);
+      if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+      const { sub: userId } = request.user;
+      try {
+        sendJson(reply, await setTeamMembership(fastify.prisma, userId, params.data.id, body.data.onTeam));
+      } catch (err) {
+        if (err instanceof CreatureNotFoundError) return reply.code(404).send({ error: "creature_not_found" });
+        if (err instanceof TeamFullError) return reply.code(409).send({ error: "team_full" });
         throw err;
       }
     },

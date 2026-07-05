@@ -3,6 +3,8 @@ export type ElementalType = "normal" | "feu" | "eau" | "plante" | "electrique";
 export interface SpeciesConfig {
   key: string;
   name: string;
+  /** Real national Pokédex number, for the Pokédex-style collection UI. */
+  dexNumber: number;
   elementalType: ElementalType;
   baseAttack: number;
   baseHp: number;
@@ -18,7 +20,8 @@ export const STARTER_SPECIES_KEYS = ["salamandre", "grenouille", "lierre"] as co
 export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   moineau: {
     key: "moineau",
-    name: "Moineau Piaf",
+    name: "Roucool",
+    dexNumber: 16,
     elementalType: "normal",
     baseAttack: 8,
     baseHp: 30,
@@ -28,7 +31,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   ecureuil: {
     key: "ecureuil",
-    name: "Écureuil Vif",
+    name: "Fouinette",
+    dexNumber: 161,
     elementalType: "normal",
     baseAttack: 9,
     baseHp: 26,
@@ -38,7 +42,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   salamandre: {
     key: "salamandre",
-    name: "Salamandre Braise",
+    name: "Salamèche",
+    dexNumber: 4,
     elementalType: "feu",
     baseAttack: 12,
     baseHp: 28,
@@ -48,7 +53,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   renardeau: {
     key: "renardeau",
-    name: "Renardeau Flamme",
+    name: "Goupix",
+    dexNumber: 37,
     elementalType: "feu",
     baseAttack: 14,
     baseHp: 24,
@@ -58,7 +64,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   loutre: {
     key: "loutre",
-    name: "Loutre Ruisseau",
+    name: "Moustillon",
+    dexNumber: 501,
     elementalType: "eau",
     baseAttack: 11,
     baseHp: 30,
@@ -68,7 +75,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   grenouille: {
     key: "grenouille",
-    name: "Grenouille Bulle",
+    name: "Grenousse",
+    dexNumber: 656,
     elementalType: "eau",
     baseAttack: 10,
     baseHp: 32,
@@ -78,7 +86,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   lierre: {
     key: "lierre",
-    name: "Lierre Rampant",
+    name: "Mystherbe",
+    dexNumber: 43,
     elementalType: "plante",
     baseAttack: 9,
     baseHp: 34,
@@ -88,7 +97,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   scarabee: {
     key: "scarabee",
-    name: "Scarabée Feuille",
+    name: "Larveyette",
+    dexNumber: 540,
     elementalType: "plante",
     baseAttack: 13,
     baseHp: 26,
@@ -98,7 +108,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   "moucheron-foudre": {
     key: "moucheron-foudre",
-    name: "Moucheron Foudre",
+    name: "Statitik",
+    dexNumber: 595,
     elementalType: "electrique",
     baseAttack: 16,
     baseHp: 20,
@@ -108,7 +119,8 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   "goupil-etincelle": {
     key: "goupil-etincelle",
-    name: "Goupil Étincelle",
+    name: "Dynavolt",
+    dexNumber: 309,
     elementalType: "electrique",
     baseAttack: 18,
     baseHp: 22,

@@ -55,6 +55,7 @@ model PlayerCreature {
   level      Int      @default(1)
   xp         Int      @default(0)
   currentHp  Int
+  isOnTeam   Boolean  @default(false)
   isActive   Boolean  @default(false)
   caughtAt   DateTime @default(now())
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import type { ElementalType, PokeballCatalogEntry } from "@farm-clicker/shared";
+import type { PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
 import { useExplorationStore } from "../state/explorationStore";
@@ -12,15 +12,9 @@ import {
   finishEncounter,
   fleeEncounter,
 } from "../api/exploration";
+import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
-
-const TYPE_ACCENT: Record<ElementalType, string> = {
-  normal: "#a5a5a5",
-  feu: "#e0663c",
-  eau: "#4c9fe0",
-  plante: "#5fb85f",
-  electrique: "#f0c419",
-};
+import { TYPE_ACCENT } from "../theme/typeColors";
 
 export function EncounterPage({ cityId }: { cityId: string }) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -28,6 +22,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
   const goToCity = useExplorationStore((s) => s.goToCity);
   const { state, lastHit, hitCount, setState, applyAttack, clear } = useBattleStore();
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
+  const [team, setTeam] = useState<PlayerCreatureView[]>([]);
   const [acting, setActing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -47,6 +42,17 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       .catch(() => {});
   }, [accessToken]);
 
+  const awaitingSwitch = state !== null && state.encounter !== null && state.activeCreature === null;
+
+  // Derived from state shape (not an ephemeral flag from the last attack) so this also
+  // fires correctly when resuming an encounter left mid-switch on a fresh page load.
+  useEffect(() => {
+    if (!accessToken || !awaitingSwitch) return;
+    listCreatures(accessToken)
+      .then(setTeam)
+      .catch(() => {});
+  }, [accessToken, awaitingSwitch]);
+
   async function handleAttack() {
     if (!accessToken || acting) return;
     setActing(true);
@@ -54,7 +60,24 @@ export function EncounterPage({ cityId }: { cityId: string }) {
     try {
       const result = await attackEncounter(accessToken);
       applyAttack(result.state, result.damageDealt, result.damageTaken);
-      if (result.fainted) setMessage("Ta créature est K.O. ! Retourne te soigner.");
+      if (result.fainted && !result.canSwitch) {
+        setMessage("Ton équipe est K.O. ! Retourne te soigner.");
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) logout();
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleSwitch(creatureId: string) {
+    if (!accessToken || acting) return;
+    setActing(true);
+    try {
+      await activateCreature(accessToken, creatureId);
+      const refreshed = await getExplorationState(accessToken);
+      setState(refreshed);
+      setMessage(null);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -118,7 +141,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
   const themeStyle = { "--encounter-accent": accent } as CSSProperties;
 
   const defeated = encounter !== null && encounter.currentHp <= 0;
-  const creatureFainted = creature !== null && creature.currentHp <= 0;
+  const switchOptions = team.filter((c) => c.isOnTeam && c.currentHp > 0);
 
   return (
     <div className="dialog-box encounter-box" style={themeStyle}>
@@ -193,7 +216,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
         </p>
       )}
 
-      {encounter && !defeated && !creatureFainted && (
+      {encounter && !defeated && creature && (
         <button type="button" className="click-btn" onClick={handleAttack} disabled={acting}>
           <span className="click-emoji">⚔️</span>
           <span>Attaquer</span>
@@ -219,8 +242,21 @@ export function EncounterPage({ cityId }: { cityId: string }) {
         </div>
       )}
 
-      {creatureFainted && (
-        <p className="error-text">Ta créature est K.O. Retourne te soigner au Centre Pokémon.</p>
+      {awaitingSwitch && (
+        <div className="generator-list">
+          <p className="error-text">Ta créature est K.O. ! Choisis un remplaçant :</p>
+          {switchOptions.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="btn-primary"
+              disabled={acting}
+              onClick={() => handleSwitch(c.id)}
+            >
+              {c.nickname ?? c.name} (Nv.{c.level}, {c.currentHp}/{c.maxHp} PV)
+            </button>
+          ))}
+        </div>
       )}
 
       {encounter && (

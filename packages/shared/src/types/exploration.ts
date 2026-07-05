@@ -12,6 +12,8 @@ export interface AttackResponse {
   damageTaken: number;
   victory: boolean;
   fainted: boolean;
+  /** True if a healthy teammate can take over so the fight continues instead of ending. */
+  canSwitch: boolean;
 }
 
 export interface CaptureResponse {

@@ -4,6 +4,7 @@ import {
   CITY_MAPS,
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
+  MAX_TEAM_SIZE,
   nextComboStacks,
   comboMultiplier,
   typeMultiplier,
@@ -88,12 +89,16 @@ export async function enterRoute(
 
   await prisma.$transaction(async (tx) => {
     await lockPlayerState(tx, userId);
+
+    // An in-progress encounter (e.g. awaiting a team switch after a faint) always takes
+    // precedence, even if nobody is currently active — that's exactly the state a player
+    // needs to get back into to pick a replacement and keep fighting.
+    const existingEncounter = await tx.wildEncounter.findUnique({ where: { userId } });
+    if (existingEncounter) return;
+
     const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
     if (!activeCreature) throw new NoActiveCreatureError();
     if (activeCreature.currentHp <= 0) throw new ActiveCreatureFaintedError();
-
-    const existingEncounter = await tx.wildEncounter.findUnique({ where: { userId } });
-    if (existingEncounter) return;
 
     const entry = pickWeightedEntry(hotspot.encounterTable, Math.random());
     const level = entry.minLevel + Math.floor(Math.random() * (entry.maxLevel - entry.minLevel + 1));
@@ -113,6 +118,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   let damageTaken = 0;
   let victory = false;
   let fainted = false;
+  let canSwitch = false;
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -153,16 +159,30 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     const playerHpAfter = Math.max(0, activeCreature.currentHp - damageTaken);
     fainted = playerHpAfter <= 0;
 
-    await tx.playerCreature.update({ where: { id: activeCreature.id }, data: { currentHp: playerHpAfter } });
-    if (fainted) {
-      await tx.wildEncounter.delete({ where: { userId } });
-    } else {
+    await tx.playerCreature.update({
+      where: { id: activeCreature.id },
+      data: { currentHp: playerHpAfter, isActive: fainted ? false : true },
+    });
+
+    if (!fainted) {
       await tx.wildEncounter.update({ where: { userId }, data: { currentHp: wildHpAfter } });
+      return;
+    }
+
+    const healthyTeammates = await tx.playerCreature.count({
+      where: { userId, isOnTeam: true, currentHp: { gt: 0 }, id: { not: activeCreature.id } },
+    });
+    canSwitch = healthyTeammates > 0;
+
+    if (canSwitch) {
+      await tx.wildEncounter.update({ where: { userId }, data: { currentHp: wildHpAfter } });
+    } else {
+      await tx.wildEncounter.delete({ where: { userId } });
     }
   });
 
   const state = await buildExplorationState(prisma, userId);
-  return { state, damageDealt, damageTaken, victory, fainted };
+  return { state, damageDealt, damageTaken, victory, fainted, canSwitch };
 }
 
 export async function captureEncounter(
@@ -196,12 +216,14 @@ export async function captureEncounter(
     success = rollCapture(Math.random(), species.baseCaptureRate, pokeball.catchMultiplier, 0);
 
     if (success) {
+      const teamCount = await tx.playerCreature.count({ where: { userId, isOnTeam: true } });
       const created = await tx.playerCreature.create({
         data: {
           userId,
           speciesKey: encounter.speciesKey,
           level: encounter.level,
           currentHp: creatureMaxHp(species.baseHp, encounter.level),
+          isOnTeam: teamCount < MAX_TEAM_SIZE,
         },
       });
       createdCreatureId = created.id;
