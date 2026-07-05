@@ -12,6 +12,7 @@ import creaturesRoutes from "./modules/creatures/creatures.routes.js";
 import shopRoutes from "./modules/shop/shop.routes.js";
 import leagueRoutes from "./modules/league/league.routes.js";
 import marketRoutes from "./modules/market/market.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 const fastify = Fastify({ logger: true });
 
@@ -29,6 +30,7 @@ try {
   await fastify.register(shopRoutes, { prefix: "/api" });
   await fastify.register(leagueRoutes, { prefix: "/api" });
   await fastify.register(marketRoutes, { prefix: "/api" });
+  await fastify.register(adminRoutes, { prefix: "/api" });
 
   fastify.get("/api/health", async () => ({ status: "ok" }));
 

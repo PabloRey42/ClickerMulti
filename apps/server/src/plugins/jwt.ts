@@ -6,6 +6,7 @@ import { env } from "../config/env.js";
 export interface AccessTokenPayload {
   sub: string;
   username: string;
+  email: string;
 }
 
 declare module "@fastify/jwt" {

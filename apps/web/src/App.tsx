@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { Compass, LayoutGrid } from "lucide-react";
+import { Compass, LayoutGrid, ShieldAlert } from "lucide-react";
 import { useAuthStore } from "./state/authStore";
 import { useExplorationStore } from "./state/explorationStore";
 import { LoginPage } from "./pages/LoginPage";
@@ -10,13 +10,16 @@ import { LeaguePage } from "./pages/LeaguePage";
 import { EncounterPage } from "./pages/EncounterPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
+import { AdminPage } from "./pages/AdminPage";
 import { TeamSidebar } from "./components/TeamSidebar";
 import { RouteEncounterSidebar } from "./components/RouteEncounterSidebar";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
 
-type Section = "explore" | "collection";
+const ADMIN_EMAIL = "admin@admin.com";
+
+type Section = "explore" | "collection" | "admin";
 
 function NavTab({
   active,
@@ -136,6 +139,14 @@ export function App() {
             icon={LayoutGrid}
             label="Collection"
           />
+          {user.email === ADMIN_EMAIL && (
+            <NavTab
+              active={section === "admin"}
+              onClick={() => setSection("admin")}
+              icon={ShieldAlert}
+              label="Admin"
+            />
+          )}
           <button
             type="button"
             onClick={() => setShowInventory(true)}
@@ -148,9 +159,11 @@ export function App() {
         </nav>
       }
       left={section === "explore" ? <RouteEncounterSidebar /> : undefined}
-      right={<TeamSidebar />}
+      right={section === "admin" ? undefined : <TeamSidebar />}
     >
       {section === "collection" && <CollectionPage />}
+
+      {section === "admin" && <AdminPage />}
 
       {section === "explore" && (
         <div

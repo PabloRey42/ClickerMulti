@@ -54,7 +54,7 @@ export async function issueRefreshToken(prisma: PrismaClient, userId: string): P
 export async function consumeRefreshToken(
   prisma: PrismaClient,
   token: string,
-): Promise<{ userId: string; username: string } | null> {
+): Promise<{ userId: string; username: string; email: string } | null> {
   const tokenHash = hashToken(token);
   const record = await prisma.refreshToken.findUnique({
     where: { tokenHash },
@@ -65,5 +65,5 @@ export async function consumeRefreshToken(
     return null;
   }
 
-  return { userId: record.userId, username: record.user.username };
+  return { userId: record.userId, username: record.user.username, email: record.user.email };
 }

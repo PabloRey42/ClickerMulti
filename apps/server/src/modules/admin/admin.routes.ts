@@ -1,0 +1,119 @@
+import type { FastifyInstance } from "fastify";
+import { z } from "zod";
+import { sendJson } from "../../lib/json.js";
+import { requireAdmin } from "../../lib/admin-auth.js";
+import {
+  listUsers,
+  getUserDetail,
+  setGold,
+  giveCreature,
+  deleteCreature,
+  setInventoryItem,
+  deleteUser,
+  UserNotFoundError,
+  InvalidSpeciesError,
+  CreatureNotFoundError,
+  InvalidItemError,
+} from "./admin.service.js";
+
+const userParamsSchema = z.object({ userId: z.string().min(1) });
+const creatureParamsSchema = z.object({ userId: z.string().min(1), creatureId: z.string().min(1) });
+const itemParamsSchema = z.object({ userId: z.string().min(1), itemKey: z.string().min(1) });
+
+const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
+const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(999) });
+const itemBodySchema = z.object({ quantity: z.number().int().min(0).max(999999) });
+
+export default async function adminRoutes(fastify: FastifyInstance) {
+  fastify.addHook("preHandler", fastify.authenticate);
+  fastify.addHook("preHandler", requireAdmin);
+
+  fastify.get("/admin/users", async (_request, reply) => {
+    sendJson(reply, { users: await listUsers(fastify.prisma) });
+  });
+
+  fastify.get("/admin/users/:userId", async (request, reply) => {
+    const parsed = userParamsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_params" });
+
+    try {
+      sendJson(reply, await getUserDetail(fastify.prisma, parsed.data.userId));
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/users/:userId/gold", async (request, reply) => {
+    const params = userParamsSchema.safeParse(request.params);
+    const body = goldBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(reply, await setGold(fastify.prisma, params.data.userId, BigInt(body.data.goldBalance)));
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.post("/admin/users/:userId/creatures", async (request, reply) => {
+    const params = userParamsSchema.safeParse(request.params);
+    const body = creatureBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(
+        reply,
+        await giveCreature(fastify.prisma, params.data.userId, body.data.speciesKey, body.data.level),
+      );
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      if (err instanceof InvalidSpeciesError) return reply.code(400).send({ error: "invalid_species" });
+      throw err;
+    }
+  });
+
+  fastify.delete("/admin/users/:userId/creatures/:creatureId", async (request, reply) => {
+    const parsed = creatureParamsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_params" });
+
+    try {
+      sendJson(reply, await deleteCreature(fastify.prisma, parsed.data.userId, parsed.data.creatureId));
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      if (err instanceof CreatureNotFoundError) return reply.code(404).send({ error: "creature_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/users/:userId/items/:itemKey", async (request, reply) => {
+    const params = itemParamsSchema.safeParse(request.params);
+    const body = itemBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(
+        reply,
+        await setInventoryItem(fastify.prisma, params.data.userId, params.data.itemKey, body.data.quantity),
+      );
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      if (err instanceof InvalidItemError) return reply.code(400).send({ error: "invalid_item" });
+      throw err;
+    }
+  });
+
+  fastify.delete("/admin/users/:userId", async (request, reply) => {
+    const parsed = userParamsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_params" });
+
+    try {
+      await deleteUser(fastify.prisma, parsed.data.userId);
+      return reply.code(204).send();
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      throw err;
+    }
+  });
+}

@@ -33,7 +33,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     try {
       const user = await createUserWithPlayerState(fastify.prisma, parsed.data);
-      const accessToken = await reply.jwtSign({ sub: user.id, username: user.username });
+      const accessToken = await reply.jwtSign({ sub: user.id, username: user.username, email: user.email });
       const refreshToken = await issueRefreshToken(fastify.prisma, user.id);
 
       const body: AuthResponse = {
@@ -61,7 +61,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(401).send({ error: "invalid_credentials" });
     }
 
-    const accessToken = await reply.jwtSign({ sub: user.id, username: user.username });
+    const accessToken = await reply.jwtSign({ sub: user.id, username: user.username, email: user.email });
     const refreshToken = await issueRefreshToken(fastify.prisma, user.id);
 
     const body: AuthResponse = {
@@ -83,7 +83,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       return reply.code(401).send({ error: "invalid_refresh_token" });
     }
 
-    const accessToken = await reply.jwtSign({ sub: session.userId, username: session.username });
+    const accessToken = await reply.jwtSign({ sub: session.userId, username: session.username, email: session.email });
     return reply.send({ accessToken });
   });
 }
