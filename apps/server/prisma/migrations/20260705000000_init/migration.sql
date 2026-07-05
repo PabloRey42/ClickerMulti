@@ -1,6 +1,3 @@
--- CreateEnum
-CREATE TYPE "CreatureType" AS ENUM ('FIRE', 'WATER', 'GRASS');
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -17,7 +14,11 @@ CREATE TABLE "User" (
 CREATE TABLE "PlayerState" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "currencyBalance" BIGINT NOT NULL DEFAULT 0,
+    "resourceBalance" BIGINT NOT NULL DEFAULT 0,
+    "affectionBalance" BIGINT NOT NULL DEFAULT 0,
+    "comboStacks" INTEGER NOT NULL DEFAULT 0,
+    "lastClickAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastTickAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "PlayerState_pkey" PRIMARY KEY ("id")
@@ -36,40 +37,26 @@ CREATE TABLE "RefreshToken" (
 );
 
 -- CreateTable
-CREATE TABLE "Species" (
+CREATE TABLE "Generator" (
     "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "type" "CreatureType" NOT NULL,
-    "baseAttack" INTEGER NOT NULL,
-    "baseHp" INTEGER NOT NULL,
-    "evolutionLevel" INTEGER,
-    "evolvesToId" TEXT,
+    "baseCost" BIGINT NOT NULL,
+    "costGrowth" DECIMAL(6,4) NOT NULL,
+    "baseProduction" BIGINT NOT NULL,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "Species_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Generator_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Creature" (
+CREATE TABLE "PlayerGenerator" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "speciesId" TEXT NOT NULL,
-    "level" INTEGER NOT NULL DEFAULT 1,
-    "xp" BIGINT NOT NULL DEFAULT 0,
-    "caughtAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "generatorId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "Creature_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "WildEncounter" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "speciesId" TEXT NOT NULL,
-    "currentHp" BIGINT NOT NULL,
-    "maxHp" BIGINT NOT NULL,
-    "lastTickAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "WildEncounter_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PlayerGenerator_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -88,16 +75,13 @@ CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
 CREATE INDEX "RefreshToken_userId_idx" ON "RefreshToken"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Species_name_key" ON "Species"("name");
+CREATE UNIQUE INDEX "Generator_key_key" ON "Generator"("key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Species_evolvesToId_key" ON "Species"("evolvesToId");
+CREATE INDEX "PlayerGenerator_userId_idx" ON "PlayerGenerator"("userId");
 
 -- CreateIndex
-CREATE INDEX "Creature_userId_idx" ON "Creature"("userId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "WildEncounter_userId_key" ON "WildEncounter"("userId");
+CREATE UNIQUE INDEX "PlayerGenerator_userId_generatorId_key" ON "PlayerGenerator"("userId", "generatorId");
 
 -- AddForeignKey
 ALTER TABLE "PlayerState" ADD CONSTRAINT "PlayerState_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -106,17 +90,7 @@ ALTER TABLE "PlayerState" ADD CONSTRAINT "PlayerState_userId_fkey" FOREIGN KEY (
 ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Species" ADD CONSTRAINT "Species_evolvesToId_fkey" FOREIGN KEY ("evolvesToId") REFERENCES "Species"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PlayerGenerator" ADD CONSTRAINT "PlayerGenerator_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Creature" ADD CONSTRAINT "Creature_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Creature" ADD CONSTRAINT "Creature_speciesId_fkey" FOREIGN KEY ("speciesId") REFERENCES "Species"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WildEncounter" ADD CONSTRAINT "WildEncounter_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WildEncounter" ADD CONSTRAINT "WildEncounter_speciesId_fkey" FOREIGN KEY ("speciesId") REFERENCES "Species"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
+ALTER TABLE "PlayerGenerator" ADD CONSTRAINT "PlayerGenerator_generatorId_fkey" FOREIGN KEY ("generatorId") REFERENCES "Generator"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

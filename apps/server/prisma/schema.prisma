@@ -7,31 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum CreatureType {
-  FIRE
-  WATER
-  GRASS
-}
-
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  username      String         @unique
-  passwordHash  String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  playerState   PlayerState?
-  refreshTokens RefreshToken[]
-  creatures     Creature[]
-  wildEncounter WildEncounter?
+  id              String            @id @default(cuid())
+  email           String            @unique
+  username        String            @unique
+  passwordHash    String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  playerState     PlayerState?
+  refreshTokens   RefreshToken[]
+  playerGenerators PlayerGenerator[]
 }
 
+/// Core farm/idle state for a player: resources, the click-meta currency, and combo momentum.
 model PlayerState {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currencyBalance BigInt   @default(0)
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceBalance   BigInt   @default(0)
+  affectionBalance  BigInt   @default(0)
+  comboStacks       Int      @default(0)
+  lastClickAt       DateTime @default(now())
+  lastTickAt        DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model RefreshToken {
@@ -46,43 +44,27 @@ model RefreshToken {
   @@index([userId])
 }
 
-/// A creature blueprint (not owned by anyone) - the wild/catchable form.
-model Species {
-  id             String          @id @default(cuid())
-  name           String          @unique
-  type           CreatureType
-  baseAttack     Int
-  baseHp         Int
-  evolutionLevel Int?
-  evolvesToId    String?         @unique
-  evolvesTo      Species?        @relation("Evolution", fields: [evolvesToId], references: [id])
-  evolvesFrom    Species?        @relation("Evolution")
-  creatures      Creature[]
-  encounters     WildEncounter[]
+/// Catalog of auto-generators (the future "creatures" of jalon 3) a player can buy with resources.
+model Generator {
+  id               String            @id @default(cuid())
+  key              String            @unique
+  name             String
+  baseCost         BigInt
+  costGrowth       Decimal           @db.Decimal(6, 4)
+  baseProduction   BigInt
+  sortOrder        Int               @default(0)
+  playerGenerators PlayerGenerator[]
 }
 
-/// A creature instance owned by a player.
-model Creature {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  speciesId String
-  species   Species  @relation(fields: [speciesId], references: [id])
-  level     Int      @default(1)
-  xp        BigInt   @default(0)
-  caughtAt  DateTime @default(now())
+/// How many of a given generator a player owns.
+model PlayerGenerator {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatorId String
+  generator   Generator @relation(fields: [generatorId], references: [id])
+  quantity    Int       @default(0)
 
+  @@unique([userId, generatorId])
   @@index([userId])
-}
-
-/// The single wild creature a player is currently fighting. One per player.
-model WildEncounter {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  speciesId  String
-  species    Species  @relation(fields: [speciesId], references: [id])
-  currentHp  BigInt
-  maxHp      BigInt
-  lastTickAt DateTime @default(now())
 }

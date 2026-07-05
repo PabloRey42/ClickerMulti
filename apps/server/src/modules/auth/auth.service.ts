@@ -3,7 +3,6 @@ import argon2 from "argon2";
 import type { PrismaClient } from "@prisma/client";
 import { parseDurationMs } from "../../lib/duration.js";
 import { env } from "../../config/env.js";
-import { createEncounterForUser } from "../battle/battle.service.js";
 
 export function hashPassword(password: string): Promise<string> {
   return argon2.hash(password);
@@ -28,11 +27,9 @@ export async function createUserWithPlayerState(
       email: params.email,
       username: params.username,
       passwordHash,
-      playerState: { create: { currencyBalance: 0n } },
+      playerState: { create: {} },
     },
   });
-
-  await createEncounterForUser(prisma, user.id);
 
   return user;
 }

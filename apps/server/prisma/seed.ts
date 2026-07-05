@@ -1,69 +1,53 @@
 import { PrismaClient } from "@prisma/client";
+import { GENERATOR_COST_GROWTH_DEFAULT } from "@farm-clicker/shared";
 
 const prisma = new PrismaClient();
 
-interface StarterLine {
-  base: { name: string; type: "FIRE" | "WATER" | "GRASS"; baseAttack: number; baseHp: number };
-  evolution: { name: string; baseAttack: number; baseHp: number };
-  evolutionLevel: number;
+interface GeneratorSeed {
+  key: string;
+  name: string;
+  baseCost: bigint;
+  baseProduction: bigint;
+  sortOrder: number;
 }
 
-const STARTER_LINES: StarterLine[] = [
+const GENERATORS: GeneratorSeed[] = [
+  { key: "poussin", name: "Poussin", baseCost: 15n, baseProduction: 1n, sortOrder: 0 },
+  { key: "lapin", name: "Lapin angora", baseCost: 100n, baseProduction: 5n, sortOrder: 1 },
+  { key: "vache", name: "Vache laitière", baseCost: 1_100n, baseProduction: 40n, sortOrder: 2 },
+  { key: "ruche", name: "Ruche magique", baseCost: 12_000n, baseProduction: 260n, sortOrder: 3 },
   {
-    base: { name: "Braisillon", type: "FIRE", baseAttack: 12, baseHp: 40 },
-    evolution: { name: "Braisaur", baseAttack: 24, baseHp: 70 },
-    evolutionLevel: 10,
-  },
-  {
-    base: { name: "Aquapousse", type: "WATER", baseAttack: 11, baseHp: 45 },
-    evolution: { name: "Aquadon", baseAttack: 22, baseHp: 78 },
-    evolutionLevel: 10,
-  },
-  {
-    base: { name: "Feuillite", type: "GRASS", baseAttack: 10, baseHp: 50 },
-    evolution: { name: "Feuillorage", baseAttack: 21, baseHp: 85 },
-    evolutionLevel: 10,
+    key: "dragon-jardin",
+    name: "Dragonnet des vergers",
+    baseCost: 130_000n,
+    baseProduction: 1_400n,
+    sortOrder: 4,
   },
 ];
 
 async function main() {
-  for (const line of STARTER_LINES) {
-    const evolvedSpecies = await prisma.species.upsert({
-      where: { name: line.evolution.name },
+  for (const generator of GENERATORS) {
+    await prisma.generator.upsert({
+      where: { key: generator.key },
       update: {
-        type: line.base.type,
-        baseAttack: line.evolution.baseAttack,
-        baseHp: line.evolution.baseHp,
+        name: generator.name,
+        baseCost: generator.baseCost,
+        costGrowth: GENERATOR_COST_GROWTH_DEFAULT,
+        baseProduction: generator.baseProduction,
+        sortOrder: generator.sortOrder,
       },
       create: {
-        name: line.evolution.name,
-        type: line.base.type,
-        baseAttack: line.evolution.baseAttack,
-        baseHp: line.evolution.baseHp,
-      },
-    });
-
-    await prisma.species.upsert({
-      where: { name: line.base.name },
-      update: {
-        type: line.base.type,
-        baseAttack: line.base.baseAttack,
-        baseHp: line.base.baseHp,
-        evolutionLevel: line.evolutionLevel,
-        evolvesToId: evolvedSpecies.id,
-      },
-      create: {
-        name: line.base.name,
-        type: line.base.type,
-        baseAttack: line.base.baseAttack,
-        baseHp: line.base.baseHp,
-        evolutionLevel: line.evolutionLevel,
-        evolvesToId: evolvedSpecies.id,
+        key: generator.key,
+        name: generator.name,
+        baseCost: generator.baseCost,
+        costGrowth: GENERATOR_COST_GROWTH_DEFAULT,
+        baseProduction: generator.baseProduction,
+        sortOrder: generator.sortOrder,
       },
     });
   }
 
-  console.log(`Seeded ${STARTER_LINES.length} starter lines.`);
+  console.log(`Seeded ${GENERATORS.length} generators.`);
 }
 
 main()

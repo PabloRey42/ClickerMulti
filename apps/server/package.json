@@ -21,6 +21,7 @@
     "@fastify/rate-limit": "^9.1.0",
     "@prisma/client": "^5.18.0",
     "argon2": "^0.40.3",
+    "decimal.js": "^10.4.3",
     "dotenv": "^16.4.5",
     "fastify": "^4.28.1",
     "fastify-plugin": "^4.5.1",
