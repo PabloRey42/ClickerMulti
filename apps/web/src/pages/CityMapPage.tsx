@@ -5,6 +5,7 @@ import { MapLegend } from "../components/map/MapLegend";
 import { HotspotPanel } from "../components/map/HotspotPanel";
 import { ShopPanel } from "../components/map/ShopPanel";
 import { MarketPanel } from "../components/map/MarketPanel";
+import { QuestNpcPanel } from "../components/map/QuestNpcPanel";
 import { useExplorationStore } from "../state/explorationStore";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
@@ -34,6 +35,7 @@ export function CityMapPage({ cityId }: { cityId: string }) {
   const [selected, setSelected] = useState<CityMapHotspot | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [showMarket, setShowMarket] = useState(false);
+  const [questNpcHotspotId, setQuestNpcHotspotId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cityMap = CITY_MAPS[cityId];
@@ -143,11 +145,18 @@ export function CityMapPage({ cityId }: { cityId: string }) {
             setSelected(null);
             setShowMarket(true);
           }}
+          onOpenQuest={() => {
+            if (selected) setQuestNpcHotspotId(selected.id);
+            setSelected(null);
+          }}
         />
       )}
 
       {showShop && <ShopPanel onClose={() => setShowShop(false)} />}
       {showMarket && <MarketPanel onClose={() => setShowMarket(false)} />}
+      {questNpcHotspotId && (
+        <QuestNpcPanel npcHotspotId={questNpcHotspotId} onClose={() => setQuestNpcHotspotId(null)} />
+      )}
     </section>
   );
 }

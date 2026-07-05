@@ -6,6 +6,7 @@ import {
   type MarketListingsResponse,
 } from "@farm-clicker/shared";
 import { lockPlayerState } from "../../lib/battle-db.js";
+import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class CreatureNotFoundError extends Error {}
 export class AlreadyListedError extends Error {}
@@ -69,6 +70,7 @@ async function buildListingView(
 }
 
 export async function getListings(prisma: PrismaClient, userId: string): Promise<MarketListingsResponse> {
+  await bumpQuestObjective(prisma, userId, "open_market");
   const playerState = await prisma.playerState.findUniqueOrThrow({ where: { userId } });
   const listings = await prisma.marketListing.findMany({
     where: { status: "ACTIVE" },

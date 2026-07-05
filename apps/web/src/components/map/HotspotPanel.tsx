@@ -4,7 +4,7 @@ const POI_ACTION_LABEL: Record<PoiAction, string> = {
   heal: "Soigne toute ton équipe",
   shop: "Achète des pokéballs",
   lab: "Parle au Professeur",
-  quest: "Quêtes (bientôt disponibles)",
+  quest: "Un habitant a peut-être une quête pour toi",
   info: "Point d'intérêt",
 };
 
@@ -17,6 +17,7 @@ interface HotspotPanelProps {
   onHeal: () => void;
   onOpenShop: () => void;
   onOpenMarket: () => void;
+  onOpenQuest: () => void;
 }
 
 export function HotspotPanel({
@@ -28,6 +29,7 @@ export function HotspotPanel({
   onHeal,
   onOpenShop,
   onOpenMarket,
+  onOpenQuest,
 }: HotspotPanelProps) {
   const isEncounterZone = hotspot.kind === "route" || hotspot.kind === "dungeon";
 
@@ -95,6 +97,16 @@ export function HotspotPanel({
                 Ouvrir l'Hôtel des Ventes
               </button>
             </>
+          )}
+
+          {hotspot.kind === "poi" && hotspot.action === "quest" && (
+            <button
+              type="button"
+              onClick={onOpenQuest}
+              className="rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-4 py-2.5 text-sm font-black uppercase tracking-wide text-panel shadow-[0_4px_0_var(--gold-deep)] transition-all active:translate-y-1 active:shadow-none"
+            >
+              Parler
+            </button>
           )}
         </div>
 

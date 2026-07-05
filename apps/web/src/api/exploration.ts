@@ -54,3 +54,11 @@ export function setAutoHeal(accessToken: string, enabled: boolean) {
     body: { enabled },
   });
 }
+
+export function setAutoCapture(accessToken: string, enabled: boolean) {
+  return apiRequest<ExplorationStateResponse>("/api/exploration/auto-capture", {
+    method: "POST",
+    accessToken,
+    body: { enabled },
+  });
+}

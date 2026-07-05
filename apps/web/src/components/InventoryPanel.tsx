@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { PokeballCatalogEntry, PotionCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { getShopCatalog } from "../api/shop";
-import { getExplorationState, setAutoHeal } from "../api/exploration";
+import { getExplorationState, setAutoHeal, setAutoCapture } from "../api/exploration";
 import { ApiError } from "../api/client";
 
 export function InventoryPanel({ onClose }: { onClose: () => void }) {
@@ -11,6 +11,9 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [potions, setPotions] = useState<PotionCatalogEntry[]>([]);
   const [autoHeal, setAutoHealState] = useState(false);
+  const [autoHealUnlocked, setAutoHealUnlocked] = useState(false);
+  const [autoCapture, setAutoCaptureState] = useState(false);
+  const [autoCaptureUnlocked, setAutoCaptureUnlocked] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -24,16 +27,34 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
         if (err instanceof ApiError && err.status === 401) logout();
       });
     getExplorationState(accessToken)
-      .then((state) => setAutoHealState(state.autoHealEnabled))
+      .then((state) => {
+        setAutoHealState(state.autoHealEnabled);
+        setAutoHealUnlocked(state.autoHealUnlocked);
+        setAutoCaptureState(state.autoCaptureEnabled);
+        setAutoCaptureUnlocked(state.autoCaptureUnlocked);
+      })
       .catch(() => {});
   }, [accessToken, logout]);
 
   async function handleToggleAutoHeal() {
-    if (!accessToken || busy) return;
+    if (!accessToken || busy || !autoHealUnlocked) return;
     setBusy(true);
     try {
       const state = await setAutoHeal(accessToken, !autoHeal);
       setAutoHealState(state.autoHealEnabled);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) logout();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleToggleAutoCapture() {
+    if (!accessToken || busy || !autoCaptureUnlocked) return;
+    setBusy(true);
+    try {
+      const state = await setAutoCapture(accessToken, !autoCapture);
+      setAutoCaptureState(state.autoCaptureEnabled);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -55,13 +76,18 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
       >
         <h2 className="mb-3 text-center text-lg font-black tracking-wide text-gold-light">Inventaire</h2>
 
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2.5">
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2.5">
           <span className="text-xs font-semibold text-panel-foreground/80">
             Soin auto en fin de combat (consomme des potions)
+            {!autoHealUnlocked && (
+              <span className="mt-0.5 block text-[10px] font-bold text-panel-foreground/50">
+                À débloquer via la quête de la Bibliothèque
+              </span>
+            )}
           </span>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !autoHealUnlocked}
             onClick={handleToggleAutoHeal}
             className={[
               "shrink-0 rounded-full border-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide transition-all disabled:opacity-50",
@@ -70,7 +96,31 @@ export function InventoryPanel({ onClose }: { onClose: () => void }) {
                 : "border-gold-deep bg-panel text-panel-foreground/70",
             ].join(" ")}
           >
-            {autoHeal ? "Activé" : "Désactivé"}
+            {autoHealUnlocked ? (autoHeal ? "Activé" : "Désactivé") : "Verrouillé"}
+          </button>
+        </div>
+
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2.5">
+          <span className="text-xs font-semibold text-panel-foreground/80">
+            Capture auto en fin de combat (consomme des pokéballs)
+            {!autoCaptureUnlocked && (
+              <span className="mt-0.5 block text-[10px] font-bold text-panel-foreground/50">
+                À débloquer via la quête de la Gare
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            disabled={busy || !autoCaptureUnlocked}
+            onClick={handleToggleAutoCapture}
+            className={[
+              "shrink-0 rounded-full border-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide transition-all disabled:opacity-50",
+              autoCapture
+                ? "border-gold-light bg-gradient-to-b from-gold-light to-gold-deep text-panel"
+                : "border-gold-deep bg-panel text-panel-foreground/70",
+            ].join(" ")}
+          >
+            {autoCaptureUnlocked ? (autoCapture ? "Activé" : "Désactivé") : "Verrouillé"}
           </button>
         </div>
 

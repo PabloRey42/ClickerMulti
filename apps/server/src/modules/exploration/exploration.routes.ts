@@ -11,6 +11,7 @@ import {
   fleeEncounter,
   healTeam,
   setAutoHeal,
+  setAutoCapture,
   RouteNotFoundError,
   NoActiveCreatureError,
   ActiveCreatureFaintedError,
@@ -18,11 +19,13 @@ import {
   EncounterNotDefeatedError,
   InvalidPokeballError,
   InsufficientPokeballsError,
+  AutoHealLockedError,
+  AutoCaptureLockedError,
 } from "./exploration.service.js";
 
 const routeParamsSchema = z.object({ routeKey: z.string().min(1) });
 const captureBodySchema = z.object({ pokeballKey: z.string().min(1) });
-const autoHealBodySchema = z.object({ enabled: z.boolean() });
+const autoToggleBodySchema = z.object({ enabled: z.boolean() });
 
 export default async function explorationRoutes(fastify: FastifyInstance) {
   fastify.get("/exploration/state", { preHandler: fastify.authenticate }, async (request, reply) => {
@@ -128,10 +131,28 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post("/exploration/auto-heal", { preHandler: fastify.authenticate }, async (request, reply) => {
-    const parsed = autoHealBodySchema.safeParse(request.body);
+    const parsed = autoToggleBodySchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_body" });
 
     const { sub: userId } = request.user;
-    sendJson(reply, await setAutoHeal(fastify.prisma, userId, parsed.data.enabled));
+    try {
+      sendJson(reply, await setAutoHeal(fastify.prisma, userId, parsed.data.enabled));
+    } catch (err) {
+      if (err instanceof AutoHealLockedError) return reply.code(403).send({ error: "auto_heal_locked" });
+      throw err;
+    }
+  });
+
+  fastify.post("/exploration/auto-capture", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const parsed = autoToggleBodySchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_body" });
+
+    const { sub: userId } = request.user;
+    try {
+      sendJson(reply, await setAutoCapture(fastify.prisma, userId, parsed.data.enabled));
+    } catch (err) {
+      if (err instanceof AutoCaptureLockedError) return reply.code(403).send({ error: "auto_capture_locked" });
+      throw err;
+    }
   });
 }

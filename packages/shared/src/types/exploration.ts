@@ -5,6 +5,9 @@ export interface ExplorationStateResponse {
   activeCreature: PlayerCreatureView | null;
   encounter: WildEncounterView | null;
   autoHealEnabled: boolean;
+  autoHealUnlocked: boolean;
+  autoCaptureEnabled: boolean;
+  autoCaptureUnlocked: boolean;
 }
 
 export interface AttackResponse {

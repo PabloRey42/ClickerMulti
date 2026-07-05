@@ -69,10 +69,10 @@ export const AURORA_CITY_MAP: CityMapConfig = {
     },
 
     { kind: "poi", id: "aurora-laboratoire", name: "Laboratoire du Professeur Chêne", action: "lab", shape: { xPercent: 47, yPercent: 32, radiusPercent: 3 } },
-    { kind: "poi", id: "aurora-bibliotheque", name: "Bibliothèque d'Aurora", action: "info", shape: { xPercent: 36, yPercent: 38, radiusPercent: 3 } },
+    { kind: "poi", id: "aurora-bibliotheque", name: "Bibliothèque d'Aurora", action: "quest", shape: { xPercent: 36, yPercent: 38, radiusPercent: 3 } },
     { kind: "poi", id: "aurora-marche", name: "Marché Artisanal", action: "shop", shape: { xPercent: 44, yPercent: 44, radiusPercent: 3 } },
     { kind: "poi", id: "aurora-place", name: "Place d'Aurora (Centre Pokémon Central)", action: "heal", shape: { xPercent: 58, yPercent: 43, radiusPercent: 3.5 } },
-    { kind: "poi", id: "aurora-gare", name: "Gare Centrale", action: "info", shape: { xPercent: 51, yPercent: 51, radiusPercent: 3 } },
+    { kind: "poi", id: "aurora-gare", name: "Gare Centrale", action: "quest", shape: { xPercent: 51, yPercent: 51, radiusPercent: 3 } },
     { kind: "poi", id: "aurora-parc", name: "Parc de la Ville", action: "quest", shape: { xPercent: 59, yPercent: 53, radiusPercent: 3 } },
     { kind: "poi", id: "aurora-hotel", name: "Hôtel de la Métropole", action: "info", shape: { xPercent: 69, yPercent: 54, radiusPercent: 3 } },
     { kind: "poi", id: "aurora-port", name: "Port Urbain", action: "info", shape: { xPercent: 46, yPercent: 78, radiusPercent: 3 } },

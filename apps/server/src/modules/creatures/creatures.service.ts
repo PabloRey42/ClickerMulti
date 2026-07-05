@@ -8,6 +8,7 @@ import {
   type SpeciesView,
 } from "@farm-clicker/shared";
 import { buildCreatureView } from "../../lib/battle-db.js";
+import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class CreatureNotFoundError extends Error {}
 export class CreatureFaintedError extends Error {}
@@ -57,6 +58,7 @@ export async function chooseStarter(
 }
 
 export async function listCreatures(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
+  await bumpQuestObjective(prisma, userId, "open_collection");
   const creatures = await prisma.playerCreature.findMany({ where: { userId }, orderBy: { caughtAt: "asc" } });
   return creatures.map(buildCreatureView);
 }

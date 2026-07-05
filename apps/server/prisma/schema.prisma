@@ -22,6 +22,7 @@ model User {
   leagueProgress  PlayerLeagueProgress?
   specializations PlayerSpecialization[]
   marketListings  MarketListing[]
+  questProgress   PlayerQuestProgress[]
 }
 
 /// Core player state: gold and combo momentum for the click-to-attack battle loop.
@@ -33,6 +34,11 @@ model PlayerState {
   comboStacks     Int      @default(0)
   lastClickAt     DateTime @default(now())
   autoHealEnabled Boolean  @default(false)
+  /// Both auto-heal and auto-capture are locked behind quest rewards; "Enabled" just
+  /// toggles the behavior once "Unlocked" has been granted.
+  autoHealUnlocked    Boolean  @default(false)
+  autoCaptureEnabled  Boolean  @default(false)
+  autoCaptureUnlocked Boolean  @default(false)
   updatedAt       DateTime @updatedAt
 }
 
@@ -149,4 +155,27 @@ model MarketListing {
 
   @@index([sellerId])
   @@index([status])
+}
+
+enum QuestStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Tracks quest progress against the static QUEST_CATALOG in @farm-clicker/shared. Quests
+/// auto-activate the moment their prerequisite is cleared (no separate "accept" step) and
+/// auto-complete + auto-grant their reward the moment every objective hits its target.
+model PlayerQuestProgress {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questKey          String
+  status            QuestStatus @default(IN_PROGRESS)
+  /// Record<objectiveKey, currentCount>
+  objectiveProgress Json        @default("{}")
+  startedAt         DateTime    @default(now())
+  completedAt       DateTime?
+
+  @@unique([userId, questKey])
+  @@index([userId])
 }

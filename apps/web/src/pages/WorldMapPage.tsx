@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { LUMINA_WORLD_MAP, type WorldMapHotspot } from "@farm-clicker/shared";
 import { MapView } from "../components/map/MapView";
 import { MapLegend } from "../components/map/MapLegend";
 import { useExplorationStore } from "../state/explorationStore";
+import { useAuthStore } from "../state/authStore";
+import { pingQuestObjective } from "../api/quests";
 
 const HOTSPOT_CLASS: Record<WorldMapHotspot["kind"], string> = {
   city: "bg-stat-hp",
@@ -11,6 +14,12 @@ const HOTSPOT_CLASS: Record<WorldMapHotspot["kind"], string> = {
 export function WorldMapPage() {
   const goToCity = useExplorationStore((s) => s.goToCity);
   const goToLeague = useExplorationStore((s) => s.goToLeague);
+  const accessToken = useAuthStore((s) => s.accessToken);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    pingQuestObjective(accessToken, "visit_world_map").catch(() => {});
+  }, [accessToken]);
 
   function handleClick(hotspot: WorldMapHotspot) {
     if (hotspot.kind === "city") goToCity(hotspot.cityId);

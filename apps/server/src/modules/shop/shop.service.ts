@@ -6,11 +6,13 @@ import {
   type BuyItemResponse,
 } from "@farm-clicker/shared";
 import { lockPlayerState } from "../../lib/battle-db.js";
+import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class InvalidItemError extends Error {}
 export class InsufficientGoldError extends Error {}
 
 export async function getShopCatalog(prisma: PrismaClient, userId: string): Promise<ShopCatalogResponse> {
+  await bumpQuestObjective(prisma, userId, "open_shop");
   const playerState = await prisma.playerState.findUniqueOrThrow({ where: { userId } });
   const items = await prisma.playerInventoryItem.findMany({ where: { userId } });
   const ownedByKey = new Map(items.map((i) => [i.itemKey, i.quantity]));
@@ -57,6 +59,10 @@ export async function buyItem(prisma: PrismaClient, userId: string, itemKey: str
       update: { quantity: { increment: 1 } },
       create: { userId, itemKey, quantity: 1 },
     });
+
+    if (itemKey in POTION_CATALOG) {
+      await bumpQuestObjective(tx, userId, "own_potion");
+    }
 
     return { goldBalance: updatedState.goldBalance, itemKey, owned: inventory.quantity };
   });
