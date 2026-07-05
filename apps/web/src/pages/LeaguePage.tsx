@@ -77,84 +77,91 @@ export function LeaguePage() {
 
   if (!league) {
     return (
-      <div className="map-page">
-        <h1 className="title">Ligue Pokémon</h1>
-        <p>Chargement...</p>
-      </div>
+      <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 text-center shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+        <h1 className="mb-2 text-lg font-black tracking-wide text-gold-light">Ligue Pokémon</h1>
+        <p className="text-sm font-semibold text-panel-foreground/70">Chargement...</p>
+      </section>
     );
   }
 
   return (
-    <div className="map-page">
-      <div className="topbar">
-        <h1 className="title" style={{ margin: 0 }}>
-          Ligue Pokémon
-        </h1>
-        <button type="button" className="btn-link" onClick={goToWorld}>
+    <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h1 className="text-lg font-black tracking-wide text-gold-light sm:text-xl">Ligue Pokémon</h1>
+        <button
+          type="button"
+          onClick={goToWorld}
+          className="text-xs font-bold text-panel-foreground/70 underline-offset-2 hover:text-gold-light hover:underline"
+        >
           Retour à la carte du monde
         </button>
       </div>
 
-      <div className="stats">
-        <div className="stat-pill">
-          <span className="stat-label">Rang</span>
-          <span className="stat-value">{league.rank}</span>
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div className="flex flex-1 flex-col items-center gap-0.5 rounded-xl border-2 border-gold-deep bg-panel px-4 py-2.5">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-panel-foreground/60">Rang</span>
+          <span className="text-lg font-black text-gold-light">{league.rank}</span>
         </div>
-        <div className="stat-pill">
-          <span className="stat-label">Points de spécialisation</span>
-          <span className="stat-value">{league.unspentPoints}</span>
+        <div className="flex flex-1 flex-col items-center gap-0.5 rounded-xl border-2 border-gold-deep bg-panel px-4 py-2.5">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-panel-foreground/60">
+            Points de spécialisation
+          </span>
+          <span className="text-lg font-black text-gold-light">{league.unspentPoints}</span>
         </div>
       </div>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
 
-      <h2 className="title" style={{ fontSize: 18 }}>
-        Prochains adversaires
-      </h2>
-      <ul className="generator-list">
+      <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-gold-light">Prochains adversaires</h2>
+      <ul className="mb-4 flex flex-col gap-2">
         {league.opponentPreview.map((opponent, i) => (
-          <li key={i} className="generator-row">
+          <li key={i} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel px-3 py-2">
             <img
               src={`/sprites/${opponent.spriteFile}`}
               alt={opponent.name}
-              style={{ width: 40, height: 40, imageRendering: "pixelated" }}
+              className="h-9 w-9 shrink-0 [image-rendering:pixelated]"
             />
-            <div className="generator-row-info">
-              <span className="generator-row-name">{opponent.name}</span>
-              <span className="generator-row-meta">Nv. {opponent.level}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold text-gold-light">{opponent.name}</p>
+              <p className="text-xs font-semibold text-panel-foreground/60">Nv. {opponent.level}</p>
             </div>
           </li>
         ))}
       </ul>
 
-      <button type="button" className="click-btn" onClick={handleChallenge} disabled={busy}>
-        <span className="click-emoji">🏆</span>
-        <span>{league.inProgress ? "Reprendre" : "Défier"}</span>
-      </button>
+      <div className="mb-5 flex justify-center">
+        <button
+          type="button"
+          onClick={handleChallenge}
+          disabled={busy}
+          className="flex items-center gap-2 rounded-full border-[3px] border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-6 py-3 text-sm font-black uppercase tracking-wide text-panel shadow-[0_6px_0_var(--gold-deep),0_10px_20px_rgba(0,0,0,0.5)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_var(--gold-deep)] disabled:opacity-60"
+        >
+          <span>🏆</span>
+          <span>{league.inProgress ? "Reprendre" : "Défier"}</span>
+        </button>
+      </div>
 
-      <h2 className="title" style={{ fontSize: 18, marginTop: 20 }}>
-        Spécialisation
-      </h2>
-      <ul className="generator-list">
+      <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-gold-light">Spécialisation</h2>
+      <ul className="flex flex-col gap-2">
         {ELEMENTAL_TYPES.map((type) => (
-          <li key={type} className="generator-row">
-            <div className="generator-row-info">
-              <span className="generator-row-name">{TYPE_LABEL[type]}</span>
-              <span className="generator-row-meta">
+          <li key={type} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel px-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold text-gold-light">{TYPE_LABEL[type]}</p>
+              <p className="text-xs font-semibold text-panel-foreground/60">
                 {league.specialization[type] ?? 0} point(s) investi(s)
-              </span>
+              </p>
             </div>
             <button
               type="button"
-              className="buy-btn"
               disabled={busy || league.unspentPoints < 1}
               onClick={() => handleSpecialize(type)}
+              className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase text-panel disabled:opacity-50"
             >
               Investir
             </button>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
-import { SPECIES_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
+import { SPECIES_CATALOG, type PlayerCreatureView, type ElementalType } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
 import { listCreatures, activateCreature, setTeamMembership } from "../api/creatures";
 import { ApiError } from "../api/client";
-import { TYPE_ACCENT } from "../theme/typeColors";
 
 const DEX_ENTRIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - b.dexNumber);
+
+const TYPE_BADGE: Record<ElementalType, string> = {
+  normal: "bg-panel-light text-panel-foreground border-panel-foreground/30",
+  electrique: "bg-gold text-panel border-gold-deep",
+  eau: "bg-stat-xp text-panel-foreground border-stat-xp",
+  feu: "bg-stat-hp text-panel-foreground border-stat-hp",
+  plante: "bg-stat-hp text-panel-foreground border-stat-hp",
+};
+
+function pad(n: number) {
+  return `#${n.toString().padStart(3, "0")}`;
+}
 
 export function CollectionPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -61,75 +72,118 @@ export function CollectionPage() {
     }
   }
 
-  return (
-    <div className="map-page">
-      <h1 className="title">Pokédex</h1>
-      {error && <p className="error-text">{error}</p>}
+  const discoveredCount = DEX_ENTRIES.filter((species) =>
+    creatures.some((c) => c.speciesKey === species.key),
+  ).length;
 
-      <div className="pokedex-grid">
+  return (
+    <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+      <div className="mb-4 flex items-baseline justify-center gap-3">
+        <h1 className="text-lg font-black tracking-wide text-gold-light sm:text-xl">Pokédex</h1>
+        <span className="text-xs font-bold text-panel-foreground/60">
+          {discoveredCount}/{DEX_ENTRIES.length} découverts
+        </span>
+      </div>
+
+      {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
+
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {DEX_ENTRIES.map((species) => {
           const owned = creatures.filter((c) => c.speciesKey === species.key);
           const isOwned = owned.length > 0;
 
+          if (!isOwned) {
+            return (
+              <li
+                key={species.key}
+                className="flex flex-col items-center rounded-2xl border-2 border-panel-foreground/15 bg-panel/50 p-3 text-center"
+              >
+                <span className="text-[11px] font-bold text-panel-foreground/40">{pad(species.dexNumber)}</span>
+                <div className="my-4 flex h-16 w-16 items-center justify-center">
+                  <span className="h-10 w-10 rounded-full bg-panel-foreground/20" />
+                </div>
+                <span className="text-sm font-black tracking-widest text-panel-foreground/40">???</span>
+              </li>
+            );
+          }
+
           return (
-            <div key={species.key} className={`pokedex-entry ${isOwned ? "" : "pokedex-entry-locked"}`}>
-              <span className="pokedex-number">#{String(species.dexNumber).padStart(3, "0")}</span>
-              <img
-                src={`/sprites/${species.spriteFile}`}
-                alt={isOwned ? species.name : "Pokémon non capturé"}
-                className="pokedex-sprite"
-              />
-              <span className="pokedex-name">{isOwned ? species.name : "???"}</span>
-              {isOwned && (
-                <span
-                  className="pokedex-type-badge"
-                  style={{ background: TYPE_ACCENT[species.elementalType] }}
-                >
-                  {species.elementalType}
-                </span>
-              )}
+            <li key={species.key} className="flex flex-col rounded-2xl border-2 border-gold-deep bg-panel p-3 text-center shadow-md">
+              <span className="text-[11px] font-bold text-gold-light/70">{pad(species.dexNumber)}</span>
+
+              <div className="mx-auto my-2 flex h-16 w-16 items-center justify-center rounded-xl border border-gold-deep/40 bg-panel-light">
+                <img
+                  src={`/sprites/${species.spriteFile}`}
+                  alt={species.name}
+                  className="h-11 w-11 [image-rendering:pixelated]"
+                />
+              </div>
+
+              <p className="text-sm font-extrabold text-gold-light">{species.name}</p>
+
+              <span
+                className={[
+                  "mx-auto mt-1 inline-block rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                  TYPE_BADGE[species.elementalType],
+                ].join(" ")}
+              >
+                {species.elementalType}
+              </span>
+
+              <div className="my-2 border-t border-dashed border-panel-foreground/20" />
 
               {owned.map((c) => (
-                <div key={c.id} className="pokedex-instance">
-                  <span className="pokedex-instance-name">
-                    {c.nickname ?? c.name} {c.isActive ? "★" : ""}
-                  </span>
-                  <span className="pokedex-instance-meta">
-                    Nv.{c.level} · {c.currentHp}/{c.maxHp} PV
-                  </span>
-                  <div className="xp-bar">
-                    <div
-                      className="xp-bar-fill"
-                      style={{ width: `${(c.xp / c.xpToNextLevel) * 100}%` }}
-                    />
+                <div key={c.id} className="mt-2 flex flex-col gap-1 border-t border-panel-foreground/10 pt-2 first:mt-0 first:border-0 first:pt-0">
+                  <p className="text-[11px] font-bold text-panel-foreground/80">
+                    {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
+                  </p>
+                  <div className="flex flex-col gap-1">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-bar-track">
+                      <div
+                        className="h-full rounded-full bg-stat-hp transition-all"
+                        style={{ width: `${Math.max(0, Math.min(100, (c.currentHp / c.maxHp) * 100))}%` }}
+                      />
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-bar-track">
+                      <div
+                        className="h-full rounded-full bg-stat-xp transition-all"
+                        style={{ width: `${Math.max(0, Math.min(100, (c.xp / c.xpToNextLevel) * 100))}%` }}
+                      />
+                    </div>
                   </div>
-                  <span className="xp-label">
+                  <p className="text-[10px] font-bold text-panel-foreground/60">
                     {c.xp}/{c.xpToNextLevel} XP
-                  </span>
-                  <div className="pokedex-instance-actions">
+                  </p>
+
+                  <div className="mt-1 flex items-center justify-center gap-2">
                     <button
                       type="button"
-                      className="buy-btn"
                       disabled={busyId === c.id}
                       onClick={() => handleToggleTeam(c)}
+                      className="rounded-lg bg-stat-xp px-3 py-1.5 text-[11px] font-extrabold text-panel-foreground shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                     >
                       {c.isOnTeam ? "Retirer" : "Ajouter"}
                     </button>
                     <button
                       type="button"
-                      className="buy-btn"
                       disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
                       onClick={() => handleActivate(c)}
+                      className={[
+                        "rounded-lg px-3 py-1.5 text-[11px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
+                        c.isActive
+                          ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
+                          : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
+                      ].join(" ")}
                     >
                       Actif
                     </button>
                   </div>
                 </div>
               ))}
-            </div>
+            </li>
           );
         })}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

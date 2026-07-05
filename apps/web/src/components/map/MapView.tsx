@@ -53,36 +53,52 @@ export function MapView<H extends HotspotLike>({
   }
 
   return (
-    <div className="map-toolbar">
+    <div className="flex flex-col gap-3">
       <button
         type="button"
-        className={`tab ${editorMode ? "tab-active" : ""}`}
         onClick={() => setEditorMode((v) => !v)}
+        className={[
+          "self-start rounded-full border-2 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide transition-colors",
+          editorMode
+            ? "border-gold-deep bg-gold text-panel"
+            : "border-gold-deep/50 bg-panel/60 text-gold-light hover:bg-panel-light",
+        ].join(" ")}
       >
         Mode éditeur {editorMode ? "activé" : "désactivé"}
       </button>
 
-      <div className="map-frame" onClick={handleMapClick}>
-        <img src={imageSrc} alt={imageAlt} className="map-image" draggable={false} />
+      <div
+        onClick={handleMapClick}
+        className="relative overflow-hidden rounded-2xl border-2 border-gold-deep shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]"
+        style={{ cursor: editorMode ? "crosshair" : "default" }}
+      >
+        <img src={imageSrc} alt={imageAlt} draggable={false} className="h-auto w-full select-none" />
 
         {hotspots.map((hotspot) => (
           <button
             key={hotspot.id}
             type="button"
-            className={`map-hotspot ${markerClassName(hotspot)}`}
-            style={{ left: `${hotspot.shape.xPercent}%`, top: `${hotspot.shape.yPercent}%` }}
             onClick={(e) => {
               e.stopPropagation();
               if (editorMode) return;
               onHotspotClick(hotspot);
             }}
-            title={markerLabel(hotspot)}
-          />
+            className="group absolute -translate-x-1/2 -translate-y-1/2"
+            aria-label={markerLabel(hotspot)}
+            style={{ left: `${hotspot.shape.xPercent}%`, top: `${hotspot.shape.yPercent}%` }}
+          >
+            <span
+              className={`block h-3.5 w-3.5 rounded-full border-2 border-panel-foreground shadow-[0_0_8px_rgba(0,0,0,0.7)] transition-transform group-hover:scale-125 ${markerClassName(hotspot)}`}
+            />
+            <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-gold-deep bg-panel/95 px-2 py-0.5 text-[10px] font-bold text-gold-light opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              {markerLabel(hotspot)}
+            </span>
+          </button>
         ))}
 
         {editorMode && editorPin && (
           <div
-            className="map-editor-pin"
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-[130%] whitespace-nowrap rounded-lg bg-panel px-2 py-1 text-[11px] font-bold text-gold-light"
             style={{ left: `${editorPin.xPercent}%`, top: `${editorPin.yPercent}%` }}
           >
             x: {editorPin.xPercent.toFixed(1)}% · y: {editorPin.yPercent.toFixed(1)}%

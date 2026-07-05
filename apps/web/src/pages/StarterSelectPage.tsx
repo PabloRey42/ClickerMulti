@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
-import type { SpeciesView } from "@farm-clicker/shared";
+import type { SpeciesView, ElementalType } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { getStarterOptions, chooseStarter } from "../api/creatures";
 import { ApiError } from "../api/client";
+
+const TYPE_BADGE: Record<ElementalType, string> = {
+  normal: "bg-panel-light text-panel-foreground border-panel-foreground/30",
+  electrique: "bg-gold text-panel border-gold-deep",
+  eau: "bg-stat-xp text-panel-foreground border-stat-xp",
+  feu: "bg-stat-hp text-panel-foreground border-stat-hp",
+  plante: "bg-stat-hp text-panel-foreground border-stat-hp",
+};
 
 export function StarterSelectPage({ onChosen }: { onChosen: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -36,29 +44,56 @@ export function StarterSelectPage({ onChosen }: { onChosen: () => void }) {
   }
 
   return (
-    <div className="dialog-box">
-      <h1 className="title">Choisis ton starter</h1>
-      {error && <p className="error-text">{error}</p>}
-      <ul className="generator-list">
+    <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+      <h1 className="mb-1 text-center text-lg font-black tracking-wide text-gold-light sm:text-xl">
+        Choisis ton starter
+      </h1>
+      <p className="mb-4 text-center text-xs font-semibold text-panel-foreground/60">
+        Ce Pokémon t'accompagnera pour tes premiers combats.
+      </p>
+
+      {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
+
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {options.map((species) => (
-          <li key={species.key} className="generator-row">
-            <div className="generator-row-info">
-              <span className="generator-row-name">{species.name}</span>
-              <span className="generator-row-meta">
-                Type : {species.elementalType} · ATT {species.baseAttack} · PV {species.baseHp}
-              </span>
+          <li
+            key={species.key}
+            className="flex flex-col items-center rounded-2xl border-2 border-gold-deep bg-panel p-3 text-center shadow-md"
+          >
+            <div className="my-2 flex h-16 w-16 items-center justify-center rounded-xl border border-gold-deep/40 bg-panel-light">
+              <img
+                src={`/sprites/${species.spriteFile}`}
+                alt={species.name}
+                className="h-11 w-11 [image-rendering:pixelated]"
+              />
             </div>
+
+            <p className="text-sm font-extrabold text-gold-light">{species.name}</p>
+
+            <span
+              className={[
+                "mx-auto mt-1 inline-block rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
+                TYPE_BADGE[species.elementalType],
+              ].join(" ")}
+            >
+              {species.elementalType}
+            </span>
+
+            <p className="mt-2 text-[10px] font-bold text-panel-foreground/60">
+              ATT {species.baseAttack} · PV {species.baseHp}
+            </p>
+
             <button
               type="button"
-              className="btn-primary"
               disabled={choosing !== null}
               onClick={() => handleChoose(species.key)}
+              className="mt-3 w-full rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase tracking-wide text-panel shadow-[0_3px_0_var(--gold-deep)] transition-all active:translate-y-0.5 active:shadow-none disabled:opacity-60"
             >
               {choosing === species.key ? "..." : "Choisir"}
             </button>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }

@@ -19,29 +19,36 @@ export function RouteEncounterSidebar() {
   const sorted = [...hotspot.encounterTable].sort((a, b) => b.rarityWeight - a.rarityWeight);
 
   return (
-    <div className="dialog-box route-encounter-sidebar">
-      <h2 className="title team-sidebar-title">Pokémon de la zone</h2>
-      <ul className="route-encounter-list">
+    <aside className="w-full rounded-3xl border-[3px] border-gold bg-gold-deep/30 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+      <h2 className="mb-3 text-center text-sm font-black uppercase tracking-widest text-gold-light">
+        Pokémon de la zone
+      </h2>
+      <ul className="flex flex-col gap-2">
         {sorted.map((entry) => {
           const species = SPECIES_CATALOG[entry.speciesKey];
           return (
-            <li key={entry.speciesKey} className="route-encounter-entry">
+            <li
+              key={entry.speciesKey}
+              className="flex items-center gap-2 rounded-xl border-2 border-gold-deep bg-panel px-2 py-1.5"
+            >
               <img
                 src={`/sprites/${species.spriteFile}`}
                 alt={species.name}
-                className="route-encounter-sprite"
+                className="h-9 w-9 shrink-0 [image-rendering:pixelated]"
               />
-              <div className="route-encounter-info">
-                <span className="route-encounter-name">{species.name}</span>
-                <span className="route-encounter-meta">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-extrabold text-gold-light">{species.name}</p>
+                <p className="text-[10px] font-semibold text-panel-foreground/60">
                   Nv. {entry.minLevel}-{entry.maxLevel}
-                </span>
+                </p>
               </div>
-              <span className="route-encounter-percent">{formatChance(entry.rarityWeight, total)}</span>
+              <span className="shrink-0 text-xs font-black text-stat-hp">
+                {formatChance(entry.rarityWeight, total)}
+              </span>
             </li>
           );
         })}
       </ul>
-    </div>
+    </aside>
   );
 }

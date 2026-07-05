@@ -25,6 +25,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   insufficient_gold: "Tu n'as pas assez d'or.",
 };
 
+const inputClass =
+  "rounded-lg border-2 border-gold-deep bg-panel px-2 py-1.5 text-xs text-gold-light outline-none focus:border-gold";
+
 export function MarketPanel({ onClose }: { onClose: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
@@ -141,15 +144,25 @@ export function MarketPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="hotspot-panel-overlay" onClick={onClose}>
-      <div className="hotspot-panel market-panel" onClick={(e) => e.stopPropagation()}>
-        <h2 className="encounter-name">Hôtel des Ventes</h2>
-        <p>Or : {gold !== null ? gold.toString() : "..."}</p>
-        {error && <p className="error-text">{error}</p>}
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-panel/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-3xl border-[3px] border-gold bg-panel p-5 shadow-[0_10px_40px_rgba(0,0,0,0.7)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="mb-1 text-center text-lg font-black tracking-wide text-gold-light">Hôtel des Ventes</h2>
+        <p className="mb-2 text-center text-sm font-extrabold text-gold-light">
+          Or : {gold !== null ? gold.toString() : "..."}
+        </p>
+        {error && <p className="mb-2 text-center text-xs font-bold text-stat-hp">{error}</p>}
 
-        <h3 className="pokedex-name">Vendre un objet</h3>
-        <div className="market-sell-form">
-          <select value={sellItemKey} onChange={(e) => setSellItemKey(e.target.value)}>
+        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+          Vendre un objet
+        </h3>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <select value={sellItemKey} onChange={(e) => setSellItemKey(e.target.value)} className={inputClass}>
             <option value="">Choisir...</option>
             {pokeballs
               .filter((p) => p.owned > 0)
@@ -165,6 +178,7 @@ export function MarketPanel({ onClose }: { onClose: () => void }) {
             value={sellItemQty}
             onChange={(e) => setSellItemQty(e.target.value)}
             placeholder="Qté"
+            className={`${inputClass} w-16`}
           />
           <input
             type="number"
@@ -172,15 +186,23 @@ export function MarketPanel({ onClose }: { onClose: () => void }) {
             value={sellItemPrice}
             onChange={(e) => setSellItemPrice(e.target.value)}
             placeholder="Prix (or)"
+            className={`${inputClass} w-24`}
           />
-          <button type="button" className="btn-primary" disabled={busy} onClick={handleSellItem}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleSellItem}
+            className="rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase text-panel disabled:opacity-50"
+          >
             Vendre
           </button>
         </div>
 
-        <h3 className="pokedex-name">Vendre un Pokémon</h3>
-        <div className="market-sell-form">
-          <select value={sellCreatureId} onChange={(e) => setSellCreatureId(e.target.value)}>
+        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+          Vendre un Pokémon
+        </h3>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <select value={sellCreatureId} onChange={(e) => setSellCreatureId(e.target.value)} className={inputClass}>
             <option value="">Choisir...</option>
             {creatures.map((c) => (
               <option key={c.id} value={c.id}>
@@ -194,34 +216,47 @@ export function MarketPanel({ onClose }: { onClose: () => void }) {
             value={sellCreaturePrice}
             onChange={(e) => setSellCreaturePrice(e.target.value)}
             placeholder="Prix (or)"
+            className={`${inputClass} w-24`}
           />
-          <button type="button" className="btn-primary" disabled={busy} onClick={handleSellCreature}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleSellCreature}
+            className="rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase text-panel disabled:opacity-50"
+          >
             Vendre
           </button>
         </div>
 
-        <h3 className="pokedex-name">Annonces actives</h3>
-        <ul className="generator-list market-listing-list">
+        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+          Annonces actives
+        </h3>
+        <ul className="flex flex-col gap-2">
           {listings.map((l) => (
-            <li key={l.id} className="generator-row">
-              <div className="generator-row-info">
-                <span className="generator-row-name">
+            <li key={l.id} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-extrabold text-gold-light">
                   {l.assetType === "CREATURE" ? l.creatureName : `${l.itemName} x${l.quantity}`}
-                </span>
-                <span className="generator-row-meta">
+                </p>
+                <p className="text-xs font-semibold text-panel-foreground/60">
                   {l.askGoldPrice.toString()} or · vendu par {l.isMine ? "toi" : l.sellerUsername}
-                </span>
+                </p>
               </div>
               {l.isMine ? (
-                <button type="button" className="buy-btn" disabled={busy} onClick={() => handleCancel(l.id)}>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => handleCancel(l.id)}
+                  className="shrink-0 rounded-full border-2 border-gold-deep bg-panel px-3 py-1.5 text-xs font-extrabold text-gold-light transition-colors hover:bg-panel-light disabled:opacity-50"
+                >
                   Annuler
                 </button>
               ) : (
                 <button
                   type="button"
-                  className="buy-btn"
                   disabled={busy || gold === null || gold < l.askGoldPrice}
                   onClick={() => handleBuy(l.id)}
+                  className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase text-panel disabled:opacity-50"
                 >
                   Acheter
                 </button>
@@ -230,7 +265,11 @@ export function MarketPanel({ onClose }: { onClose: () => void }) {
           ))}
         </ul>
 
-        <button type="button" className="btn-link" onClick={onClose} style={{ marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 w-full text-center text-xs font-bold text-panel-foreground/60 underline-offset-2 hover:text-gold-light hover:underline"
+        >
           Fermer
         </button>
       </div>

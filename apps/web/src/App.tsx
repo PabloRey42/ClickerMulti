@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import type { ComponentType, ReactNode } from "react";
+import { Compass, LayoutGrid } from "lucide-react";
 import { useAuthStore } from "./state/authStore";
 import { useExplorationStore } from "./state/explorationStore";
 import { LoginPage } from "./pages/LoginPage";
@@ -15,6 +17,66 @@ import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
 
 type Section = "explore" | "collection";
+
+function NavTab({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+      className={[
+        "group relative flex h-11 flex-1 items-center justify-center gap-2 rounded-full border-2 px-4 text-[11px] font-extrabold uppercase tracking-widest transition-all sm:text-xs",
+        active
+          ? "border-gold-deep bg-gradient-to-b from-gold-light to-gold-deep text-panel shadow-[0_0_16px_var(--gold)]"
+          : "border-gold-deep/70 bg-panel/80 text-gold-light hover:border-gold hover:bg-panel-light",
+      ].join(" ")}
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="truncate">{label}</span>
+    </button>
+  );
+}
+
+function GameShell({
+  nav,
+  left,
+  right,
+  children,
+}: {
+  nav?: ReactNode;
+  left?: ReactNode;
+  right?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <main
+      className="relative min-h-screen w-full bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/images/city-night.png')" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-panel/50 via-panel/20 to-panel/70" />
+
+      <div className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col gap-4 px-4 py-5 lg:px-8">
+        {nav && <header className="mx-auto w-full max-w-4xl">{nav}</header>}
+
+        <div className="flex flex-1 flex-col items-stretch gap-4 lg:flex-row">
+          {left && <div className="mx-auto w-full max-w-3xl lg:order-1 lg:mx-0 lg:w-72 lg:shrink-0">{left}</div>}
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 lg:order-2 lg:mx-0">{children}</div>
+          {right && <div className="mx-auto w-full max-w-3xl lg:order-3 lg:mx-0 lg:w-72 lg:shrink-0">{right}</div>}
+        </div>
+      </div>
+    </main>
+  );
+}
 
 export function App() {
   const user = useAuthStore((s) => s.user);
@@ -42,75 +104,72 @@ export function App() {
 
   if (hasCreature === null) {
     return (
-      <div className="screen">
-        <div className="dialog-box">
-          <p className="title">Chargement...</p>
+      <GameShell>
+        <div className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-6 text-center shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+          <p className="text-lg font-black text-gold-light">Chargement...</p>
         </div>
-      </div>
+      </GameShell>
     );
   }
 
   if (!hasCreature) {
     return (
-      <div className="screen">
+      <GameShell>
         <StarterSelectPage onChosen={() => setHasCreature(true)} />
-      </div>
+      </GameShell>
     );
   }
 
   return (
-    <div className="screen">
-      <div className="game-layout">
-        <RouteEncounterSidebar />
+    <GameShell
+      nav={
+        <nav className="flex items-center gap-3">
+          <NavTab
+            active={section === "explore"}
+            onClick={() => setSection("explore")}
+            icon={Compass}
+            label="Exploration"
+          />
+          <NavTab
+            active={section === "collection"}
+            onClick={() => setSection("collection")}
+            icon={LayoutGrid}
+            label="Collection"
+          />
+          <button
+            type="button"
+            onClick={() => setShowInventory(true)}
+            title="Inventaire"
+            aria-label="Inventaire"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-gold-deep/70 bg-panel/80 text-gold-light transition-all hover:border-gold hover:bg-panel-light"
+          >
+            <img src="/ui/inventory-button.png" alt="" className="h-6 w-6 [image-rendering:pixelated]" />
+          </button>
+        </nav>
+      }
+      left={section === "explore" ? <RouteEncounterSidebar /> : undefined}
+      right={<TeamSidebar />}
+    >
+      {section === "collection" && <CollectionPage />}
 
-        <div className="app-shell">
-          <div className="tabs section-tabs">
-            <button
-              type="button"
-              className={`tab ${section === "explore" ? "tab-active" : ""}`}
-              onClick={() => setSection("explore")}
-            >
-              Explorer
-            </button>
-            <button
-              type="button"
-              className={`tab ${section === "collection" ? "tab-active" : ""}`}
-              onClick={() => setSection("collection")}
-            >
-              Collection
-            </button>
-            <button
-              type="button"
-              className="tab tab-icon"
-              onClick={() => setShowInventory(true)}
-              title="Inventaire"
-            >
-              <img src="/ui/inventory-button.png" alt="Inventaire" />
-            </button>
-          </div>
-
-          {section === "collection" && <CollectionPage />}
-
-          {section === "explore" && (
-            <div className={`map-transition ${transitioning ? "map-transition-active" : ""}`}>
-              {screen.view === "world" && <WorldMapPage />}
-              {screen.view === "city" && <CityMapPage cityId={screen.cityId} />}
-              {screen.view === "league" && <LeaguePage />}
-              {screen.view === "encounter" && (
-                <EncounterPage
-                  onLeave={() =>
-                    screen.returnTo.view === "league" ? goToLeague() : goToCity(screen.returnTo.cityId)
-                  }
-                />
-              )}
-            </div>
+      {section === "explore" && (
+        <div
+          className={`transition-all duration-300 ${transitioning ? "scale-[0.97] opacity-0" : "scale-100 opacity-100"}`}
+        >
+          {screen.view === "world" && <WorldMapPage />}
+          {screen.view === "city" && <CityMapPage cityId={screen.cityId} />}
+          {screen.view === "league" && <LeaguePage />}
+          {screen.view === "encounter" && (
+            <EncounterPage
+              onLeave={() =>
+                screen.returnTo.view === "league" ? goToLeague() : goToCity(screen.returnTo.cityId)
+              }
+            />
           )}
         </div>
-
-        <TeamSidebar />
-      </div>
+      )}
 
       {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
-    </div>
+    </GameShell>
   );
 }

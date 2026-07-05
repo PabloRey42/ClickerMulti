@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Design tokens ported from the user-provided v0 mockup (ui/app/globals.css) — dark,
+ * gold-accented RPG panel look, replacing the old cream/blue cartoon theme. */
+@theme inline {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-light: var(--gold-light);
+  --color-panel: var(--panel);
+  --color-panel-light: var(--panel-light);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-bar-track: var(--bar-track);
+  --color-stat-hp: var(--stat-hp);
+  --color-stat-xp: var(--stat-xp);
+  --color-stat-pp: var(--stat-pp);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+:root {
+  color-scheme: dark;
+  --background: oklch(0.18 0.03 250);
+  --foreground: oklch(0.96 0.02 90);
+
+  --gold: oklch(0.84 0.16 85);
+  --gold-deep: oklch(0.72 0.15 70);
+  --gold-light: oklch(0.92 0.11 95);
+  --panel: oklch(0.24 0.03 250);
+  --panel-light: oklch(0.32 0.03 250);
+  --panel-foreground: oklch(0.95 0.02 90);
+  --bar-track: oklch(0.3 0.03 250);
+  --stat-hp: oklch(0.72 0.17 145);
+  --stat-xp: oklch(0.7 0.15 240);
+  --stat-pp: oklch(0.78 0.15 300);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.level-up-flash {
+  margin: 8px 0;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--gold-light);
+  text-shadow: 0 0 6px var(--gold-deep), 0 0 2px #000;
+  animation: level-up-pop 1.4s ease;
+}
+
+@keyframes level-up-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+  }
+}

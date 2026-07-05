@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CITY_MAPS, type CityMapHotspot } from "@farm-clicker/shared";
 import { MapView } from "../components/map/MapView";
+import { MapLegend } from "../components/map/MapLegend";
 import { HotspotPanel } from "../components/map/HotspotPanel";
 import { ShopPanel } from "../components/map/ShopPanel";
 import { MarketPanel } from "../components/map/MarketPanel";
@@ -12,9 +13,9 @@ import { enterRoute, healTeam } from "../api/exploration";
 import { ApiError } from "../api/client";
 
 const HOTSPOT_CLASS: Record<CityMapHotspot["kind"], string> = {
-  route: "map-hotspot-route",
-  poi: "map-hotspot-poi",
-  dungeon: "map-hotspot-dungeon",
+  route: "bg-stat-hp",
+  poi: "bg-stat-xp",
+  dungeon: "bg-stat-pp",
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -39,13 +40,19 @@ export function CityMapPage({ cityId }: { cityId: string }) {
 
   if (!cityMap) {
     return (
-      <div className="map-page">
-        <h1 className="title">Bientôt disponible</h1>
-        <p>Cette ville n'a pas encore de carte détaillée.</p>
-        <button type="button" className="btn-link" onClick={goToWorld}>
+      <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 text-center shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
+        <h1 className="mb-2 text-lg font-black tracking-wide text-gold-light">Bientôt disponible</h1>
+        <p className="mb-3 text-sm font-semibold text-panel-foreground/70">
+          Cette ville n'a pas encore de carte détaillée.
+        </p>
+        <button
+          type="button"
+          onClick={goToWorld}
+          className="text-sm font-bold text-gold-light underline-offset-2 hover:underline"
+        >
           Retour à la carte du monde
         </button>
-      </div>
+      </section>
     );
   }
 
@@ -91,12 +98,14 @@ export function CityMapPage({ cityId }: { cityId: string }) {
   }
 
   return (
-    <div className="map-page">
-      <div className="topbar">
-        <h1 className="title" style={{ margin: 0 }}>
-          {cityMap.name}
-        </h1>
-        <button type="button" className="btn-link" onClick={goToWorld}>
+    <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h1 className="text-lg font-black tracking-wide text-gold-light sm:text-xl">{cityMap.name}</h1>
+        <button
+          type="button"
+          onClick={goToWorld}
+          className="text-xs font-bold text-panel-foreground/70 underline-offset-2 hover:text-gold-light hover:underline"
+        >
           Retour à la carte du monde
         </button>
       </div>
@@ -108,6 +117,14 @@ export function CityMapPage({ cityId }: { cityId: string }) {
         markerClassName={(hotspot) => HOTSPOT_CLASS[hotspot.kind]}
         markerLabel={(hotspot) => hotspot.name}
         onHotspotClick={handleSelect}
+      />
+
+      <MapLegend
+        items={[
+          { color: "bg-stat-hp", label: "Route" },
+          { color: "bg-stat-xp", label: "Point d'intérêt" },
+          { color: "bg-stat-pp", label: "Donjon" },
+        ]}
       />
 
       {selected && (
@@ -131,6 +148,6 @@ export function CityMapPage({ cityId }: { cityId: string }) {
 
       {showShop && <ShopPanel onClose={() => setShowShop(false)} />}
       {showMarket && <MarketPanel onClose={() => setShowMarket(false)} />}
-    </div>
+    </section>
   );
 }
