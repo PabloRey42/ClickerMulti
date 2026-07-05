@@ -76,7 +76,7 @@ export function CollectionPage() {
               <span className="pokedex-number">#{String(species.dexNumber).padStart(3, "0")}</span>
               <img
                 src={`/sprites/${species.spriteFile}`}
-                alt={isOwned ? species.name : "Créature non capturée"}
+                alt={isOwned ? species.name : "Pokémon non capturé"}
                 className="pokedex-sprite"
               />
               <span className="pokedex-name">{isOwned ? species.name : "???"}</span>

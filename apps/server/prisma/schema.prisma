@@ -19,6 +19,8 @@ model User {
   playerCreatures PlayerCreature[]
   wildEncounter   WildEncounter?
   inventoryItems  PlayerInventoryItem[]
+  leagueProgress  PlayerLeagueProgress?
+  specializations PlayerSpecialization[]
 }
 
 /// Core player state: gold and combo momentum for the click-to-attack battle loop.
@@ -62,17 +64,43 @@ model PlayerCreature {
   @@index([userId])
 }
 
-/// The wild creature a player is currently fighting on a route/dungeon. At most one per player.
+/// The wild creature a player is currently fighting on a route/dungeon (or a League
+/// trainer opponent, when isLeagueBattle). At most one per player.
 model WildEncounter {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  routeKey   String
-  speciesKey String
-  level      Int
-  currentHp  Int
-  maxHp      Int
-  startedAt  DateTime @default(now())
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routeKey            String
+  speciesKey          String
+  level               Int
+  currentHp           Int
+  maxHp               Int
+  isLeagueBattle      Boolean  @default(false)
+  leagueOpponentIndex Int      @default(0)
+  startedAt           DateTime @default(now())
+}
+
+/// Tracks League progress: rank increases (never resets) each time the whole trainer
+/// roster is cleared, and grants unspent specialization points to invest.
+model PlayerLeagueProgress {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank          Int      @default(0)
+  unspentPoints Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+/// Points invested per elemental type, boosting damage for matching-type creatures.
+model PlayerSpecialization {
+  id             String @id @default(cuid())
+  userId         String
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  elementalType  String
+  pointsInvested Int    @default(0)
+
+  @@unique([userId, elementalType])
+  @@index([userId])
 }
 
 /// Generic per-player item stack (pokéballs today; reusable for future item types).

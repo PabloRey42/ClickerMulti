@@ -16,6 +16,7 @@ export const LUMINA_WORLD_MAP: WorldMapConfig = {
     { kind: "city", id: "world-city-sablonnia", name: "Sablonnia", cityId: "sablonnia", shape: { xPercent: 22, yPercent: 54, radiusPercent: 3 } },
     { kind: "city", id: "world-city-aurora", name: "Métropole d'Aurora", cityId: "aurora", shape: { xPercent: 58, yPercent: 34, radiusPercent: 3.5 } },
     { kind: "city", id: "world-city-coralis", name: "Coralis", cityId: "coralis", shape: { xPercent: 45, yPercent: 73, radiusPercent: 3 } },
+    { kind: "league", id: "world-league", name: "Ligue Pokémon", shape: { xPercent: 83, yPercent: 17, radiusPercent: 3.5 } },
   ],
 };
 

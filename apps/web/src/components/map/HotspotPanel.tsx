@@ -1,7 +1,7 @@
 import type { CityMapHotspot, PoiAction } from "@farm-clicker/shared";
 
 const POI_ACTION_LABEL: Record<PoiAction, string> = {
-  heal: "Soigne ta créature active",
+  heal: "Soigne toute ton équipe",
   shop: "Achète des pokéballs",
   lab: "Parle au Professeur",
   quest: "Quêtes (bientôt disponibles)",
@@ -36,7 +36,7 @@ export function HotspotPanel({
 
         {hotspot.kind === "poi" && <p>{POI_ACTION_LABEL[hotspot.action]}</p>}
         {isEncounterZone && (
-          <p>{hotspot.kind === "dungeon" ? "Donjon" : "Route"} — des créatures sauvages rôdent ici.</p>
+          <p>{hotspot.kind === "dungeon" ? "Donjon" : "Route"} — des Pokémon sauvages rôdent ici.</p>
         )}
 
         {error && <p className="error-text">{error}</p>}

@@ -63,6 +63,7 @@ export function buildEncounterView(encounter: WildEncounter): WildEncounterView 
     level: encounter.level,
     currentHp: encounter.currentHp,
     maxHp: encounter.maxHp,
+    isLeagueBattle: encounter.isLeagueBattle,
   };
 }
 

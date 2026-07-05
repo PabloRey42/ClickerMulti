@@ -25,6 +25,14 @@ export interface CityHotspot {
   cityId: string;
 }
 
+/** The Pokémon League on the world map: clicking it opens the League/specialization screen. */
+export interface LeagueHotspot {
+  kind: "league";
+  id: string;
+  name: string;
+  shape: HotspotShape;
+}
+
 /** A wild-encounter zone inside a city (or later, the world map itself). */
 export interface RouteHotspot {
   kind: "route";
@@ -65,9 +73,11 @@ export interface CityMapConfig {
   hotspots: CityMapHotspot[];
 }
 
+export type WorldMapHotspot = CityHotspot | LeagueHotspot;
+
 export interface WorldMapConfig {
   id: string;
   name: string;
   imageSrc: string;
-  hotspots: CityHotspot[];
+  hotspots: WorldMapHotspot[];
 }

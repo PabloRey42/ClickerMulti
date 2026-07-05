@@ -9,7 +9,7 @@ import {
   captureEncounter,
   finishEncounter,
   fleeEncounter,
-  healActiveCreature,
+  healTeam,
   RouteNotFoundError,
   NoActiveCreatureError,
   ActiveCreatureFaintedError,
@@ -122,11 +122,6 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
 
   fastify.post("/exploration/heal", { preHandler: fastify.authenticate }, async (request, reply) => {
     const { sub: userId } = request.user;
-    try {
-      sendJson(reply, await healActiveCreature(fastify.prisma, userId));
-    } catch (err) {
-      if (err instanceof NoActiveCreatureError) return reply.code(409).send({ error: "no_active_creature" });
-      throw err;
-    }
+    sendJson(reply, await healTeam(fastify.prisma, userId));
   });
 }

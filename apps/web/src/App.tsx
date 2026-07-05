@@ -4,6 +4,7 @@ import { useExplorationStore } from "./state/explorationStore";
 import { LoginPage } from "./pages/LoginPage";
 import { WorldMapPage } from "./pages/WorldMapPage";
 import { CityMapPage } from "./pages/CityMapPage";
+import { LeaguePage } from "./pages/LeaguePage";
 import { EncounterPage } from "./pages/EncounterPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
@@ -21,6 +22,8 @@ export function App() {
   const [hasCreature, setHasCreature] = useState<boolean | null>(null);
   const screen = useExplorationStore((s) => s.screen);
   const transitioning = useExplorationStore((s) => s.transitioning);
+  const goToCity = useExplorationStore((s) => s.goToCity);
+  const goToLeague = useExplorationStore((s) => s.goToLeague);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -79,7 +82,14 @@ export function App() {
             <div className={`map-transition ${transitioning ? "map-transition-active" : ""}`}>
               {screen.view === "world" && <WorldMapPage />}
               {screen.view === "city" && <CityMapPage cityId={screen.cityId} />}
-              {screen.view === "encounter" && <EncounterPage cityId={screen.cityId} />}
+              {screen.view === "league" && <LeaguePage />}
+              {screen.view === "encounter" && (
+                <EncounterPage
+                  onLeave={() =>
+                    screen.returnTo.view === "league" ? goToLeague() : goToCity(screen.returnTo.cityId)
+                  }
+                />
+              )}
             </div>
           )}
         </div>

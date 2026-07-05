@@ -6,7 +6,8 @@ import { ShopPanel } from "../components/map/ShopPanel";
 import { useExplorationStore } from "../state/explorationStore";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
-import { enterRoute, healActiveCreature } from "../api/exploration";
+import { useTeamStore } from "../state/teamStore";
+import { enterRoute, healTeam } from "../api/exploration";
 import { ApiError } from "../api/client";
 
 const HOTSPOT_CLASS: Record<CityMapHotspot["kind"], string> = {
@@ -16,8 +17,8 @@ const HOTSPOT_CLASS: Record<CityMapHotspot["kind"], string> = {
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
-  no_active_creature: "Tu n'as aucune créature active.",
-  active_creature_fainted: "Ta créature active est K.O. — soigne-la d'abord.",
+  no_active_creature: "Tu n'as aucun Pokémon actif.",
+  active_creature_fainted: "Ton Pokémon actif est K.O. — soigne-le d'abord.",
   route_not_found: "Cette zone n'a pas encore de contenu.",
 };
 
@@ -27,6 +28,7 @@ export function CityMapPage({ cityId }: { cityId: string }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const setBattleState = useBattleStore((s) => s.setState);
+  const refreshTeamSidebar = useTeamStore((s) => s.refresh);
   const [selected, setSelected] = useState<CityMapHotspot | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -58,7 +60,7 @@ export function CityMapPage({ cityId }: { cityId: string }) {
       const state = await enterRoute(accessToken, hotspot.id);
       setBattleState(state);
       setSelected(null);
-      goToEncounter(cityId, hotspot.id);
+      goToEncounter({ view: "city", cityId });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 401) return logout();
@@ -75,9 +77,10 @@ export function CityMapPage({ cityId }: { cityId: string }) {
     setBusy(true);
     setError(null);
     try {
-      const state = await healActiveCreature(accessToken);
+      const state = await healTeam(accessToken);
       setBattleState(state);
       setSelected(null);
+      await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {

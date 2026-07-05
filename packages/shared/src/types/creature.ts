@@ -38,4 +38,5 @@ export interface WildEncounterView {
   level: number;
   currentHp: number;
   maxHp: number;
+  isLeagueBattle: boolean;
 }

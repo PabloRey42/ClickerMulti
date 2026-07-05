@@ -1,5 +1,7 @@
 export type ElementalType = "normal" | "feu" | "eau" | "plante" | "electrique";
 
+export const ELEMENTAL_TYPES: ElementalType[] = ["normal", "feu", "eau", "plante", "electrique"];
+
 export interface SpeciesConfig {
   key: string;
   name: string;

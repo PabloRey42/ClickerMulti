@@ -3,7 +3,6 @@ import type { CSSProperties } from "react";
 import type { PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
-import { useExplorationStore } from "../state/explorationStore";
 import { ApiError } from "../api/client";
 import {
   getExplorationState,
@@ -17,10 +16,9 @@ import { getShopCatalog } from "../api/shop";
 import { TYPE_ACCENT } from "../theme/typeColors";
 import { useTeamStore } from "../state/teamStore";
 
-export function EncounterPage({ cityId }: { cityId: string }) {
+export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
-  const goToCity = useExplorationStore((s) => s.goToCity);
   const { state, lastHit, hitCount, setState, applyAttack, clear } = useBattleStore();
   const refreshTeamSidebar = useTeamStore((s) => s.refresh);
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
@@ -69,7 +67,9 @@ export function EncounterPage({ cityId }: { cityId: string }) {
     try {
       const result = await attackEncounter(accessToken);
       applyAttack(result.state, result.damageDealt, result.damageTaken);
-      if (result.fainted && !result.canSwitch) {
+      if (result.leagueCleared) {
+        setMessage("🏆 Ligue remportée ! Rang supérieur débloqué, points de spécialisation gagnés.");
+      } else if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
       }
       await refreshTeamSidebar(accessToken);
@@ -122,7 +122,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
         prev.map((p) => (p.key === pokeballKey ? { ...p, owned: Math.max(0, p.owned - 1) } : p)),
       );
       setMessage(
-        result.success ? `${result.creature?.name} capturé !` : "La créature s'est échappée de la balle...",
+        result.success ? `${result.creature?.name} capturé !` : "Le Pokémon s'est échappé de la balle...",
       );
       triggerLevelUp(result.leveledUp);
       await refreshTeamSidebar(accessToken);
@@ -141,13 +141,13 @@ export function EncounterPage({ cityId }: { cityId: string }) {
       if (err instanceof ApiError && err.status === 401) return logout();
     } finally {
       clear();
-      goToCity(cityId);
+      onLeave();
     }
   }
 
   function handleLeave() {
     clear();
-    goToCity(cityId);
+    onLeave();
   }
 
   const encounter = state?.encounter ?? null;
@@ -161,7 +161,10 @@ export function EncounterPage({ cityId }: { cityId: string }) {
   return (
     <div className="dialog-box encounter-box" style={themeStyle}>
       <div className="topbar">
-        <span className="trainer-name">Or : {state ? state.goldBalance.toString() : "..."}</span>
+        <span className="trainer-name">
+          Or : {state ? state.goldBalance.toString() : "..."}
+          {encounter?.isLeagueBattle ? " · 🏆 Combat de Ligue" : ""}
+        </span>
         <button type="button" className="btn-link" onClick={handleLeave}>
           Quitter
         </button>
@@ -225,7 +228,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
           </div>
         )}
 
-        {!encounter && <p className="battle-empty">Aucune créature sauvage ici pour l'instant.</p>}
+        {!encounter && <p className="battle-empty">Aucun Pokémon sauvage ici pour l'instant.</p>}
       </div>
 
       {justLeveledUp && (
@@ -274,7 +277,7 @@ export function EncounterPage({ cityId }: { cityId: string }) {
 
       {awaitingSwitch && (
         <div className="generator-list">
-          <p className="error-text">Ta créature est K.O. ! Choisis un remplaçant :</p>
+          <p className="error-text">Ton Pokémon est K.O. ! Choisis un remplaçant :</p>
           {switchOptions.map((c) => (
             <button
               key={c.id}

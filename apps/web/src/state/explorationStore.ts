@@ -1,16 +1,20 @@
 import { create } from "zustand";
 
+export type EncounterReturnTarget = { view: "city"; cityId: string } | { view: "league" };
+
 type ExplorationScreen =
   | { view: "world" }
   | { view: "city"; cityId: string }
-  | { view: "encounter"; cityId: string; routeKey: string };
+  | { view: "league" }
+  | { view: "encounter"; returnTo: EncounterReturnTarget };
 
 interface ExplorationState {
   screen: ExplorationScreen;
   transitioning: boolean;
   goToCity: (cityId: string) => void;
   goToWorld: () => void;
-  goToEncounter: (cityId: string, routeKey: string) => void;
+  goToLeague: () => void;
+  goToEncounter: (returnTo: EncounterReturnTarget) => void;
 }
 
 const TRANSITION_MS = 350;
@@ -26,11 +30,12 @@ export const useExplorationStore = create<ExplorationState>((set) => ({
     set({ transitioning: true });
     setTimeout(() => set({ screen: { view: "world" }, transitioning: false }), TRANSITION_MS);
   },
-  goToEncounter: (cityId, routeKey) => {
+  goToLeague: () => {
     set({ transitioning: true });
-    setTimeout(
-      () => set({ screen: { view: "encounter", cityId, routeKey }, transitioning: false }),
-      TRANSITION_MS,
-    );
+    setTimeout(() => set({ screen: { view: "league" }, transitioning: false }), TRANSITION_MS);
+  },
+  goToEncounter: (returnTo) => {
+    set({ transitioning: true });
+    setTimeout(() => set({ screen: { view: "encounter", returnTo }, transitioning: false }), TRANSITION_MS);
   },
 }));

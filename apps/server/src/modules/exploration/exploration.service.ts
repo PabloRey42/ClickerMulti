@@ -5,6 +5,7 @@ import {
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
   MAX_TEAM_SIZE,
+  SPECIALIZATION_POINTS_PER_CLEAR,
   nextComboStacks,
   comboMultiplier,
   typeMultiplier,
@@ -14,6 +15,9 @@ import {
   creatureAttack,
   goldReward,
   xpReward,
+  buildLeagueRoster,
+  leagueRankBonusMultiplier,
+  specializationBonusMultiplier,
   type EncounterTableEntry,
   type RouteHotspot,
   type DungeonHotspot,
@@ -38,6 +42,9 @@ export class NoEncounterError extends Error {}
 export class EncounterNotDefeatedError extends Error {}
 export class InvalidPokeballError extends Error {}
 export class InsufficientPokeballsError extends Error {}
+
+/** All species keys, used to deterministically build a League trainer roster for a rank. */
+export const ALL_SPECIES_KEYS = Object.keys(SPECIES_CATALOG);
 
 function findEncounterHotspot(routeKey: string): RouteHotspot | DungeonHotspot | undefined {
   for (const city of Object.values(CITY_MAPS)) {
@@ -84,7 +91,7 @@ async function rerollOrClearEncounter(
   }
 }
 
-async function buildExplorationState(
+export async function buildExplorationState(
   prisma: PrismaClient,
   userId: string,
 ): Promise<ExplorationStateResponse> {
@@ -130,12 +137,45 @@ export async function enterRoute(
   return buildExplorationState(prisma, userId);
 }
 
+/** Advances a League run: either lines up the next trainer opponent, or — if the whole
+ * roster is cleared — bumps rank (never resets) and grants specialization points. */
+async function resolveLeagueVictory(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  encounter: { leagueOpponentIndex: number },
+): Promise<{ cleared: boolean }> {
+  const progress = await tx.playerLeagueProgress.findUnique({ where: { userId } });
+  const rank = progress?.rank ?? 0;
+  const roster = buildLeagueRoster(rank, ALL_SPECIES_KEYS);
+  const nextIndex = encounter.leagueOpponentIndex + 1;
+
+  if (nextIndex >= roster.length) {
+    await tx.playerLeagueProgress.upsert({
+      where: { userId },
+      update: { rank: rank + 1, unspentPoints: { increment: SPECIALIZATION_POINTS_PER_CLEAR } },
+      create: { userId, rank: rank + 1, unspentPoints: SPECIALIZATION_POINTS_PER_CLEAR },
+    });
+    await tx.wildEncounter.delete({ where: { userId } });
+    return { cleared: true };
+  }
+
+  const next = roster[nextIndex];
+  const species = SPECIES_CATALOG[next.speciesKey];
+  const maxHp = creatureMaxHp(species.baseHp, next.level);
+  await tx.wildEncounter.update({
+    where: { userId },
+    data: { speciesKey: next.speciesKey, level: next.level, currentHp: maxHp, maxHp, leagueOpponentIndex: nextIndex },
+  });
+  return { cleared: false };
+}
+
 export async function attackEncounter(prisma: PrismaClient, userId: string): Promise<AttackResponse> {
   let damageDealt = 0;
   let damageTaken = 0;
   let victory = false;
   let fainted = false;
   let canSwitch = false;
+  let leagueCleared = false;
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -146,15 +186,26 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
 
     const now = new Date();
     const stacks = nextComboStacks(lockedState.comboStacks, lockedState.lastClickAt, now);
-    const multiplier = comboMultiplier(stacks);
+    const comboMult = comboMultiplier(stacks);
 
     const playerSpecies = SPECIES_CATALOG[activeCreature.speciesKey];
     const wildSpecies = SPECIES_CATALOG[encounter.speciesKey];
 
+    // Permanent bonuses: League rank boosts every attack; specialization boosts attacks
+    // from creatures whose type matches the invested type. Both apply everywhere, not
+    // just in League fights, so clearing the League actually makes the player stronger.
+    const progress = await tx.playerLeagueProgress.findUnique({ where: { userId } });
+    const specialization = await tx.playerSpecialization.findUnique({
+      where: { userId_elementalType: { userId, elementalType: playerSpecies.elementalType } },
+    });
+    const bonusMultiplier = leagueRankBonusMultiplier(progress?.rank ?? 0).mul(
+      specializationBonusMultiplier(specialization?.pointsInvested ?? 0),
+    );
+
     const playerAttack = creatureAttack(playerSpecies.baseAttack, activeCreature.level);
     damageDealt = computeAttackDamage(
       playerAttack,
-      multiplier,
+      comboMult.mul(bonusMultiplier),
       typeMultiplier(playerSpecies.elementalType, wildSpecies.elementalType),
     );
     const wildHpAfter = Math.max(0, encounter.currentHp - damageDealt);
@@ -163,7 +214,12 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
 
     if (wildHpAfter <= 0) {
       victory = true;
-      await tx.wildEncounter.update({ where: { userId }, data: { currentHp: 0 } });
+      if (encounter.isLeagueBattle) {
+        const result = await resolveLeagueVictory(tx, userId, encounter);
+        leagueCleared = result.cleared;
+      } else {
+        await tx.wildEncounter.update({ where: { userId }, data: { currentHp: 0 } });
+      }
       return;
     }
 
@@ -199,7 +255,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   });
 
   const state = await buildExplorationState(prisma, userId);
-  return { state, damageDealt, damageTaken, victory, fainted, canSwitch };
+  return { state, damageDealt, damageTaken, victory, fainted, canSwitch, leagueCleared };
 }
 
 export async function captureEncounter(
@@ -308,15 +364,20 @@ export async function fleeEncounter(prisma: PrismaClient, userId: string): Promi
   return buildExplorationState(prisma, userId);
 }
 
-export async function healActiveCreature(prisma: PrismaClient, userId: string) {
+/** Heals the player's whole team, not just whoever's active — mirrors a real Pokémon
+ * Center. This also has to work when nobody is active (e.g. the last fight ended with
+ * the active Pokémon fainting and no switch has happened yet), which "heal the active
+ * one" could never handle. */
+export async function healTeam(prisma: PrismaClient, userId: string) {
   await prisma.$transaction(async (tx) => {
-    const creature = await lockActiveCreature(tx, userId);
-    if (!creature) throw new NoActiveCreatureError();
-    const species = SPECIES_CATALOG[creature.speciesKey];
-    await tx.playerCreature.update({
-      where: { id: creature.id },
-      data: { currentHp: creatureMaxHp(species.baseHp, creature.level) },
-    });
+    const team = await tx.playerCreature.findMany({ where: { userId, isOnTeam: true } });
+    for (const member of team) {
+      const species = SPECIES_CATALOG[member.speciesKey];
+      await tx.playerCreature.update({
+        where: { id: member.id },
+        data: { currentHp: creatureMaxHp(species.baseHp, member.level) },
+      });
+    }
   });
 
   return buildExplorationState(prisma, userId);

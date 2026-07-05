@@ -43,6 +43,6 @@ export function fleeEncounter(accessToken: string) {
   });
 }
 
-export function healActiveCreature(accessToken: string) {
+export function healTeam(accessToken: string) {
   return apiRequest<ExplorationStateResponse>("/api/exploration/heal", { method: "POST", accessToken });
 }
