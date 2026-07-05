@@ -7,7 +7,9 @@ import redisPlugin from "./plugins/redis.js";
 import jwtPlugin from "./plugins/jwt.js";
 import socketioPlugin from "./plugins/socketio.js";
 import authRoutes from "./modules/auth/auth.routes.js";
-import farmRoutes from "./modules/farm/farm.routes.js";
+import explorationRoutes from "./modules/exploration/exploration.routes.js";
+import creaturesRoutes from "./modules/creatures/creatures.routes.js";
+import shopRoutes from "./modules/shop/shop.routes.js";
 
 const fastify = Fastify({ logger: true });
 
@@ -20,7 +22,9 @@ try {
   await fastify.register(socketioPlugin);
 
   await fastify.register(authRoutes, { prefix: "/api" });
-  await fastify.register(farmRoutes, { prefix: "/api" });
+  await fastify.register(explorationRoutes, { prefix: "/api" });
+  await fastify.register(creaturesRoutes, { prefix: "/api" });
+  await fastify.register(shopRoutes, { prefix: "/api" });
 
   fastify.get("/api/health", async () => ({ status: "ok" }));
 

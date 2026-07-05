@@ -8,11 +8,7 @@
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@farm-clicker/shared": "workspace:*",

@@ -1,8 +1,11 @@
 import { randomBytes, createHash } from "node:crypto";
 import argon2 from "argon2";
 import type { PrismaClient } from "@prisma/client";
+import { SPECIES_CATALOG, STARTER_SPECIES_KEY, creatureMaxHp } from "@farm-clicker/shared";
 import { parseDurationMs } from "../../lib/duration.js";
 import { env } from "../../config/env.js";
+
+const STARTER_POKEBALLS = 3;
 
 export function hashPassword(password: string): Promise<string> {
   return argon2.hash(password);
@@ -21,6 +24,7 @@ export async function createUserWithPlayerState(
   params: { email: string; username: string; password: string },
 ) {
   const passwordHash = await hashPassword(params.password);
+  const starter = SPECIES_CATALOG[STARTER_SPECIES_KEY];
 
   const user = await prisma.user.create({
     data: {
@@ -28,6 +32,16 @@ export async function createUserWithPlayerState(
       username: params.username,
       passwordHash,
       playerState: { create: {} },
+      playerCreatures: {
+        create: {
+          speciesKey: STARTER_SPECIES_KEY,
+          currentHp: creatureMaxHp(starter.baseHp, 1),
+          isActive: true,
+        },
+      },
+      inventoryItems: {
+        create: { itemKey: "pokeball_basic", quantity: STARTER_POKEBALLS },
+      },
     },
   });
 

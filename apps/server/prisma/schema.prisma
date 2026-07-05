@@ -8,28 +8,28 @@ datasource db {
 }
 
 model User {
-  id              String            @id @default(cuid())
-  email           String            @unique
-  username        String            @unique
+  id              String                @id @default(cuid())
+  email           String                @unique
+  username        String                @unique
   passwordHash    String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   playerState     PlayerState?
   refreshTokens   RefreshToken[]
-  playerGenerators PlayerGenerator[]
+  playerCreatures PlayerCreature[]
+  wildEncounter   WildEncounter?
+  inventoryItems  PlayerInventoryItem[]
 }
 
-/// Core farm/idle state for a player: resources, the click-meta currency, and combo momentum.
+/// Core player state: gold and combo momentum for the click-to-attack battle loop.
 model PlayerState {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  resourceBalance   BigInt   @default(0)
-  affectionBalance  BigInt   @default(0)
-  comboStacks       Int      @default(0)
-  lastClickAt       DateTime @default(now())
-  lastTickAt        DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goldBalance BigInt   @default(0)
+  comboStacks Int      @default(0)
+  lastClickAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model RefreshToken {
@@ -44,27 +44,44 @@ model RefreshToken {
   @@index([userId])
 }
 
-/// Catalog of auto-generators (the future "creatures" of jalon 3) a player can buy with resources.
-model Generator {
-  id               String            @id @default(cuid())
-  key              String            @unique
-  name             String
-  baseCost         BigInt
-  costGrowth       Decimal           @db.Decimal(6, 4)
-  baseProduction   BigInt
-  sortOrder        Int               @default(0)
-  playerGenerators PlayerGenerator[]
+/// A creature a player owns, caught via a wild encounter. speciesKey references the
+/// static SPECIES_CATALOG in @farm-clicker/shared, not a DB row.
+model PlayerCreature {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciesKey String
+  nickname   String?
+  level      Int      @default(1)
+  xp         Int      @default(0)
+  currentHp  Int
+  isActive   Boolean  @default(false)
+  caughtAt   DateTime @default(now())
+
+  @@index([userId])
 }
 
-/// How many of a given generator a player owns.
-model PlayerGenerator {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  generatorId String
-  generator   Generator @relation(fields: [generatorId], references: [id])
-  quantity    Int       @default(0)
+/// The wild creature a player is currently fighting on a route/dungeon. At most one per player.
+model WildEncounter {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routeKey   String
+  speciesKey String
+  level      Int
+  currentHp  Int
+  maxHp      Int
+  startedAt  DateTime @default(now())
+}
 
-  @@unique([userId, generatorId])
+/// Generic per-player item stack (pokéballs today; reusable for future item types).
+model PlayerInventoryItem {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemKey  String
+  quantity Int    @default(0)
+
+  @@unique([userId, itemKey])
   @@index([userId])
 }
