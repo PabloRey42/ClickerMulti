@@ -6,3 +6,5 @@ export * from "./game/combo.js";
 export * from "./game/generators.js";
 export * from "./game/bignum.js";
 export * from "./game/constants.js";
+export * from "./world/types.js";
+export * from "./world/lumina.js";

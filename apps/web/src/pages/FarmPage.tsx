@@ -44,82 +44,80 @@ export function FarmPage() {
   }
 
   return (
-    <div className="screen">
-      <div className="dialog-box farm-box">
-        <div className="topbar">
-          <span className="trainer-name">{user?.username}</span>
-          <button type="button" className="btn-link" onClick={logout}>
-            Déconnexion
-          </button>
-        </div>
-
-        <div className="stats">
-          <div className="stat-pill">
-            <span className="stat-label">Ressource</span>
-            <span className="stat-value">{farmState ? farmState.resourceBalance.toString() : "..."}</span>
-          </div>
-          <div className="stat-pill">
-            <span className="stat-label">Affection</span>
-            <span className="stat-value">{farmState ? farmState.affectionBalance.toString() : "..."}</span>
-          </div>
-        </div>
-        <div className="stats">
-          <div className="stat-pill">
-            <span className="stat-label">Prod/sec</span>
-            <span className="stat-value">{farmState ? farmState.productionPerSec.toString() : "..."}</span>
-          </div>
-          <div className="stat-pill">
-            <span className="stat-label">Combo</span>
-            <span className="stat-value">x{farmState?.comboMultiplier ?? "1.00"}</span>
-          </div>
-        </div>
-
-        {farmState && (
-          <div className="combo-bar">
-            <div
-              className="combo-bar-fill"
-              style={{ width: `${(farmState.comboStacks / 20) * 100}%` }}
-            />
-          </div>
-        )}
-
-        <button type="button" className="click-btn" onClick={handleClick} disabled={!farmState}>
-          <span className="click-emoji">🐣</span>
-          <span>Nourrir</span>
+    <div className="dialog-box farm-box">
+      <div className="topbar">
+        <span className="trainer-name">{user?.username}</span>
+        <button type="button" className="btn-link" onClick={logout}>
+          Déconnexion
         </button>
-
-        {lastGain !== null && (
-          <p className="gain-float" key={clickCount}>
-            +{lastGain.toString()}
-          </p>
-        )}
-
-        <ul className="generator-list">
-          {farmState?.generators.map((generator) => (
-            <li key={generator.key} className="generator-row">
-              <div className="generator-row-info">
-                <span className="generator-row-name">{generator.name}</span>
-                <span className="generator-row-meta">
-                  Possédé : {generator.owned} · +{generator.baseProduction.toString()}/s chacun
-                </span>
-              </div>
-              <button
-                type="button"
-                className="buy-btn"
-                disabled={
-                  buying === generator.key ||
-                  (farmState ? farmState.resourceBalance < generator.cost : true)
-                }
-                onClick={() => handleBuy(generator.key)}
-              >
-                Acheter
-                <br />
-                {generator.cost.toString()}
-              </button>
-            </li>
-          ))}
-        </ul>
       </div>
+
+      <div className="stats">
+        <div className="stat-pill">
+          <span className="stat-label">Ressource</span>
+          <span className="stat-value">{farmState ? farmState.resourceBalance.toString() : "..."}</span>
+        </div>
+        <div className="stat-pill">
+          <span className="stat-label">Affection</span>
+          <span className="stat-value">{farmState ? farmState.affectionBalance.toString() : "..."}</span>
+        </div>
+      </div>
+      <div className="stats">
+        <div className="stat-pill">
+          <span className="stat-label">Prod/sec</span>
+          <span className="stat-value">{farmState ? farmState.productionPerSec.toString() : "..."}</span>
+        </div>
+        <div className="stat-pill">
+          <span className="stat-label">Combo</span>
+          <span className="stat-value">x{farmState?.comboMultiplier ?? "1.00"}</span>
+        </div>
+      </div>
+
+      {farmState && (
+        <div className="combo-bar">
+          <div
+            className="combo-bar-fill"
+            style={{ width: `${(farmState.comboStacks / 20) * 100}%` }}
+          />
+        </div>
+      )}
+
+      <button type="button" className="click-btn" onClick={handleClick} disabled={!farmState}>
+        <span className="click-emoji">🐣</span>
+        <span>Nourrir</span>
+      </button>
+
+      {lastGain !== null && (
+        <p className="gain-float" key={clickCount}>
+          +{lastGain.toString()}
+        </p>
+      )}
+
+      <ul className="generator-list">
+        {farmState?.generators.map((generator) => (
+          <li key={generator.key} className="generator-row">
+            <div className="generator-row-info">
+              <span className="generator-row-name">{generator.name}</span>
+              <span className="generator-row-meta">
+                Possédé : {generator.owned} · +{generator.baseProduction.toString()}/s chacun
+              </span>
+            </div>
+            <button
+              type="button"
+              className="buy-btn"
+              disabled={
+                buying === generator.key ||
+                (farmState ? farmState.resourceBalance < generator.cost : true)
+              }
+              onClick={() => handleBuy(generator.key)}
+            >
+              Acheter
+              <br />
+              {generator.cost.toString()}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
