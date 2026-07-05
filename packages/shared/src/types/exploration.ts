@@ -4,6 +4,7 @@ export interface ExplorationStateResponse {
   goldBalance: bigint;
   activeCreature: PlayerCreatureView | null;
   encounter: WildEncounterView | null;
+  autoHealEnabled: boolean;
 }
 
 export interface AttackResponse {

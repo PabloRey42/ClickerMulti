@@ -1,9 +1,9 @@
 import type { PrismaClient, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import {
-  CITY_MAPS,
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
+  POTION_CATALOG,
   MAX_TEAM_SIZE,
   SPECIALIZATION_POINTS_PER_CLEAR,
   nextComboStacks,
@@ -18,6 +18,7 @@ import {
   buildLeagueRoster,
   leagueRankBonusMultiplier,
   specializationBonusMultiplier,
+  findEncounterHotspot,
   type EncounterTableEntry,
   type RouteHotspot,
   type DungeonHotspot,
@@ -45,17 +46,6 @@ export class InsufficientPokeballsError extends Error {}
 
 /** All species keys, used to deterministically build a League trainer roster for a rank. */
 export const ALL_SPECIES_KEYS = Object.keys(SPECIES_CATALOG);
-
-function findEncounterHotspot(routeKey: string): RouteHotspot | DungeonHotspot | undefined {
-  for (const city of Object.values(CITY_MAPS)) {
-    for (const hotspot of city.hotspots) {
-      if ((hotspot.kind === "route" || hotspot.kind === "dungeon") && hotspot.id === routeKey) {
-        return hotspot;
-      }
-    }
-  }
-  return undefined;
-}
 
 function pickWeightedEntry(entries: EncounterTableEntry[], roll: number): EncounterTableEntry {
   const total = entries.reduce((sum, e) => sum + e.rarityWeight, 0);
@@ -103,7 +93,58 @@ export async function buildExplorationState(
     goldBalance: playerState.goldBalance,
     activeCreature: activeCreature ? buildCreatureView(activeCreature) : null,
     encounter: encounter ? buildEncounterView(encounter) : null,
+    autoHealEnabled: playerState.autoHealEnabled,
   };
+}
+
+export async function setAutoHeal(
+  prisma: PrismaClient,
+  userId: string,
+  enabled: boolean,
+): Promise<ExplorationStateResponse> {
+  await prisma.playerState.update({ where: { userId }, data: { autoHealEnabled: enabled } });
+  return buildExplorationState(prisma, userId);
+}
+
+/** If auto-heal is on, consumes owned potions (weakest first, to save the strong ones)
+ * to top up the active Pokémon's HP — called at the end of a fight (finish/capture/flee)
+ * so a player can keep grinding a route without manually visiting the Centre Pokémon, as
+ * long as they still have potions. Never revives a fainted Pokémon (that needs a Revive,
+ * not a Potion — out of scope for now; a full team wipe still requires manual healing). */
+async function autoHealIfEnabled(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  const playerState = await tx.playerState.findUnique({ where: { userId } });
+  if (!playerState?.autoHealEnabled) return;
+
+  const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
+  if (!activeCreature || activeCreature.currentHp <= 0) return;
+
+  const species = SPECIES_CATALOG[activeCreature.speciesKey];
+  const maxHp = creatureMaxHp(species.baseHp, activeCreature.level);
+  let currentHp = activeCreature.currentHp;
+  if (currentHp >= maxHp) return;
+
+  const potionsByWeakest = Object.values(POTION_CATALOG).sort((a, b) => a.healAmount - b.healAmount);
+  for (const potion of potionsByWeakest) {
+    if (currentHp >= maxHp) break;
+    const inventory = await tx.playerInventoryItem.findUnique({
+      where: { userId_itemKey: { userId, itemKey: potion.key } },
+    });
+    let owned = inventory?.quantity ?? 0;
+    let used = 0;
+    while (owned > 0 && currentHp < maxHp) {
+      currentHp = Math.min(maxHp, currentHp + potion.healAmount);
+      owned -= 1;
+      used += 1;
+    }
+    if (used > 0) {
+      await tx.playerInventoryItem.update({
+        where: { userId_itemKey: { userId, itemKey: potion.key } },
+        data: { quantity: owned },
+      });
+    }
+  }
+
+  await tx.playerCreature.update({ where: { id: activeCreature.id }, data: { currentHp } });
 }
 
 export async function getExplorationState(prisma: PrismaClient, userId: string): Promise<ExplorationStateResponse> {
@@ -312,6 +353,7 @@ export async function captureEncounter(
       }
       await tx.playerState.update({ where: { userId }, data: { goldBalance: { increment: goldGained } } });
 
+      await autoHealIfEnabled(tx, userId);
       await rerollOrClearEncounter(tx, userId, encounter.routeKey);
     }
   });
@@ -347,6 +389,7 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
       where: { userId },
       data: { goldBalance: playerState.goldBalance + goldGained },
     });
+    await autoHealIfEnabled(tx, userId);
     await rerollOrClearEncounter(tx, userId, encounter.routeKey);
   });
 
@@ -358,6 +401,7 @@ export async function fleeEncounter(prisma: PrismaClient, userId: string): Promi
   await prisma.$transaction(async (tx) => {
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
+    await autoHealIfEnabled(tx, userId);
     await rerollOrClearEncounter(tx, userId, encounter.routeKey);
   });
 

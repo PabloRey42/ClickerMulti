@@ -92,6 +92,19 @@ export const AURORA_CITY_MAP: CityMapConfig = {
     },
     {
       kind: "route",
+      id: "aurora-route-3",
+      name: "Route 3",
+      elementalType: "normal",
+      encounterTable: [
+        { speciesKey: "moineau", minLevel: 4, maxLevel: 7, rarityWeight: 15000, captureRate: 0.5 },
+        { speciesKey: "ecureuil", minLevel: 4, maxLevel: 7, rarityWeight: 9999, captureRate: 0.45 },
+        // Ultra-rare: exactly 1/25000 (1 / (15000+9999+1)).
+        { speciesKey: "mew", minLevel: 30, maxLevel: 30, rarityWeight: 1, captureRate: 0.03 },
+      ],
+      shape: { xPercent: 62, yPercent: 64, radiusPercent: 2.5 },
+    },
+    {
+      kind: "route",
       id: "aurora-route-4",
       name: "Route 4",
       elementalType: "eau",

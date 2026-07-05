@@ -9,6 +9,8 @@ import { EncounterPage } from "./pages/EncounterPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
 import { TeamSidebar } from "./components/TeamSidebar";
+import { RouteEncounterSidebar } from "./components/RouteEncounterSidebar";
+import { InventoryPanel } from "./components/InventoryPanel";
 import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
 
@@ -20,6 +22,7 @@ export function App() {
   const logout = useAuthStore((s) => s.logout);
   const [section, setSection] = useState<Section>("explore");
   const [hasCreature, setHasCreature] = useState<boolean | null>(null);
+  const [showInventory, setShowInventory] = useState(false);
   const screen = useExplorationStore((s) => s.screen);
   const transitioning = useExplorationStore((s) => s.transitioning);
   const goToCity = useExplorationStore((s) => s.goToCity);
@@ -58,6 +61,8 @@ export function App() {
   return (
     <div className="screen">
       <div className="game-layout">
+        <RouteEncounterSidebar />
+
         <div className="app-shell">
           <div className="tabs section-tabs">
             <button
@@ -73,6 +78,14 @@ export function App() {
               onClick={() => setSection("collection")}
             >
               Collection
+            </button>
+            <button
+              type="button"
+              className="tab tab-icon"
+              onClick={() => setShowInventory(true)}
+              title="Inventaire"
+            >
+              <img src="/ui/inventory-button.png" alt="Inventaire" />
             </button>
           </div>
 
@@ -96,6 +109,8 @@ export function App() {
 
         <TeamSidebar />
       </div>
+
+      {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
     </div>
   );
 }

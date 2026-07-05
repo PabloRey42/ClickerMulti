@@ -1,97 +1,90 @@
 import { useEffect, useState } from "react";
 import type { PokeballCatalogEntry, PotionCatalogEntry } from "@farm-clicker/shared";
-import { useAuthStore } from "../../state/authStore";
-import { getShopCatalog, buyItem } from "../../api/shop";
-import { ApiError } from "../../api/client";
+import { useAuthStore } from "../state/authStore";
+import { getShopCatalog } from "../api/shop";
+import { getExplorationState, setAutoHeal } from "../api/exploration";
+import { ApiError } from "../api/client";
 
-export function ShopPanel({ onClose }: { onClose: () => void }) {
+export function InventoryPanel({ onClose }: { onClose: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
-  const [gold, setGold] = useState<bigint | null>(null);
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [potions, setPotions] = useState<PotionCatalogEntry[]>([]);
-  const [buying, setBuying] = useState<string | null>(null);
+  const [autoHeal, setAutoHealState] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
     getShopCatalog(accessToken)
       .then((catalog) => {
-        setGold(catalog.goldBalance);
         setPokeballs(catalog.pokeballs);
         setPotions(catalog.potions);
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) logout();
       });
+    getExplorationState(accessToken)
+      .then((state) => setAutoHealState(state.autoHealEnabled))
+      .catch(() => {});
   }, [accessToken, logout]);
 
-  async function handleBuy(key: string) {
-    if (!accessToken) return;
-    setBuying(key);
+  async function handleToggleAutoHeal() {
+    if (!accessToken || busy) return;
+    setBusy(true);
     try {
-      const result = await buyItem(accessToken, key);
-      setGold(result.goldBalance);
-      setPokeballs((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
-      setPotions((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
+      const state = await setAutoHeal(accessToken, !autoHeal);
+      setAutoHealState(state.autoHealEnabled);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
-      setBuying(null);
+      setBusy(false);
     }
   }
+
+  const ownedPokeballs = pokeballs.filter((p) => p.owned > 0);
+  const ownedPotions = potions.filter((p) => p.owned > 0);
 
   return (
     <div className="hotspot-panel-overlay" onClick={onClose}>
       <div className="hotspot-panel market-panel" onClick={(e) => e.stopPropagation()}>
-        <h2 className="encounter-name">Marché Artisanal</h2>
-        <p>Or : {gold !== null ? gold.toString() : "..."}</p>
+        <h2 className="encounter-name">Inventaire</h2>
+
+        <div className="inventory-auto-heal">
+          <span>Soin auto en fin de combat (consomme des potions)</span>
+          <button
+            type="button"
+            className={`toggle-switch ${autoHeal ? "toggle-switch-on" : ""}`}
+            disabled={busy}
+            onClick={handleToggleAutoHeal}
+          >
+            {autoHeal ? "Activé" : "Désactivé"}
+          </button>
+        </div>
 
         <h3 className="pokedex-name">Poké Balls</h3>
+        {ownedPokeballs.length === 0 && <p className="team-empty">Aucune balle possédée.</p>}
         <ul className="generator-list">
-          {pokeballs.map((p) => (
+          {ownedPokeballs.map((p) => (
             <li key={p.key} className="generator-row">
               <img src={`/items/${p.spriteFile}`} alt={p.name} className="shop-item-sprite" />
               <div className="generator-row-info">
                 <span className="generator-row-name">{p.name}</span>
-                <span className="generator-row-meta">
-                  Possédé : {p.owned} · ×{p.catchMultiplier} capture
-                </span>
+                <span className="generator-row-meta">×{p.owned}</span>
               </div>
-              <button
-                type="button"
-                className="buy-btn"
-                disabled={buying === p.key || (gold !== null && gold < p.goldCost)}
-                onClick={() => handleBuy(p.key)}
-              >
-                Acheter
-                <br />
-                {p.goldCost.toString()}
-              </button>
             </li>
           ))}
         </ul>
 
         <h3 className="pokedex-name">Soins</h3>
+        {ownedPotions.length === 0 && <p className="team-empty">Aucune potion possédée.</p>}
         <ul className="generator-list">
-          {potions.map((p) => (
+          {ownedPotions.map((p) => (
             <li key={p.key} className="generator-row">
               <img src={`/items/${p.spriteFile}`} alt={p.name} className="shop-item-sprite" />
               <div className="generator-row-info">
                 <span className="generator-row-name">{p.name}</span>
-                <span className="generator-row-meta">
-                  Possédé : {p.owned} · soigne {p.healAmount >= 9999 ? "tout" : `${p.healAmount} PV`}
-                </span>
+                <span className="generator-row-meta">×{p.owned}</span>
               </div>
-              <button
-                type="button"
-                className="buy-btn"
-                disabled={buying === p.key || (gold !== null && gold < p.goldCost)}
-                onClick={() => handleBuy(p.key)}
-              >
-                Acheter
-                <br />
-                {p.goldCost.toString()}
-              </button>
             </li>
           ))}
         </ul>

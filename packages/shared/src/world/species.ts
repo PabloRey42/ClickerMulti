@@ -130,4 +130,17 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     rarityWeight: 8,
     spriteFile: "electrike.png",
   },
+  /** Ultra-rare: 1/25000 on Route 3 only, see lumina.ts. No psychic type exists in this
+   * game yet, so it's classified normal rather than adding a 6th type for one species. */
+  mew: {
+    key: "mew",
+    name: "Mew",
+    dexNumber: 151,
+    elementalType: "normal",
+    baseAttack: 25,
+    baseHp: 50,
+    baseCaptureRate: 0.03,
+    rarityWeight: 1,
+    spriteFile: "mew.png",
+  },
 };

@@ -46,3 +46,11 @@ export function fleeEncounter(accessToken: string) {
 export function healTeam(accessToken: string) {
   return apiRequest<ExplorationStateResponse>("/api/exploration/heal", { method: "POST", accessToken });
 }
+
+export function setAutoHeal(accessToken: string, enabled: boolean) {
+  return apiRequest<ExplorationStateResponse>("/api/exploration/auto-heal", {
+    method: "POST",
+    accessToken,
+    body: { enabled },
+  });
+}

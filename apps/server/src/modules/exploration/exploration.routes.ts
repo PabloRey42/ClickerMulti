@@ -10,6 +10,7 @@ import {
   finishEncounter,
   fleeEncounter,
   healTeam,
+  setAutoHeal,
   RouteNotFoundError,
   NoActiveCreatureError,
   ActiveCreatureFaintedError,
@@ -21,6 +22,7 @@ import {
 
 const routeParamsSchema = z.object({ routeKey: z.string().min(1) });
 const captureBodySchema = z.object({ pokeballKey: z.string().min(1) });
+const autoHealBodySchema = z.object({ enabled: z.boolean() });
 
 export default async function explorationRoutes(fastify: FastifyInstance) {
   fastify.get("/exploration/state", { preHandler: fastify.authenticate }, async (request, reply) => {
@@ -123,5 +125,13 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
   fastify.post("/exploration/heal", { preHandler: fastify.authenticate }, async (request, reply) => {
     const { sub: userId } = request.user;
     sendJson(reply, await healTeam(fastify.prisma, userId));
+  });
+
+  fastify.post("/exploration/auto-heal", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const parsed = autoHealBodySchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_body" });
+
+    const { sub: userId } = request.user;
+    sendJson(reply, await setAutoHeal(fastify.prisma, userId, parsed.data.enabled));
   });
 }

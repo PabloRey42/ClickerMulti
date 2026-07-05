@@ -29,10 +29,11 @@ model PlayerState {
   id          String   @id @default(cuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goldBalance BigInt   @default(0)
-  comboStacks Int      @default(0)
-  lastClickAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  goldBalance     BigInt   @default(0)
+  comboStacks     Int      @default(0)
+  lastClickAt     DateTime @default(now())
+  autoHealEnabled Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
 }
 
 model RefreshToken {

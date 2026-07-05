@@ -814,3 +814,126 @@ body {
   overflow-y: auto;
 }
 
+.route-encounter-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+.route-encounter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-encounter-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 3px solid var(--poke-blue-dark);
+  border-radius: 12px;
+  padding: 6px 8px;
+}
+
+.route-encounter-sprite {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.route-encounter-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.route-encounter-name {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--poke-blue-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-encounter-meta {
+  font-size: 10px;
+}
+
+.route-encounter-percent {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--poke-red);
+  white-space: nowrap;
+}
+
+@media (max-width: 1300px) {
+  .route-encounter-sidebar {
+    display: none;
+  }
+}
+
+.shop-item-sprite {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.tab-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.tab-icon img {
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+}
+
+.inventory-auto-heal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  border: 3px solid var(--poke-blue-dark);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.toggle-switch {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  color: #fff;
+  background: var(--poke-red);
+  border: 2px solid var(--poke-blue-dark);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.toggle-switch-on {
+  background: var(--poke-green-dark);
+}
+
