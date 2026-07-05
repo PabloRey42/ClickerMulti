@@ -44,6 +44,11 @@ export const TYPE_LABEL: Record<ElementalType, string> = {
   fee: "Fée",
 };
 
+/** Type icon under /types/ in the web app's public assets. */
+export function typeIconSrc(type: ElementalType): string {
+  return `/types/${type}.png`;
+}
+
 /** Types whose accent color is light enough to need dark text for contrast. */
 const DARK_TEXT_TYPES = new Set<ElementalType>([
   "normal",

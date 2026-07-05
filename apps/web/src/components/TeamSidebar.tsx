@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
+import { TYPE_LABEL, typeIconSrc } from "../theme/typeColors";
 
 function TeamCard({ member }: { member: PlayerCreatureView }) {
   return (
@@ -15,8 +16,13 @@ function TeamCard({ member }: { member: PlayerCreatureView }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-1">
-          <span className="truncate text-xs font-extrabold text-gold-light">
-            {member.nickname ?? member.name} {member.isActive ? "★" : ""}
+          <span className="flex min-w-0 items-center gap-1 truncate text-xs font-extrabold text-gold-light">
+            <span className="truncate">
+              {member.nickname ?? member.name} {member.isActive ? "★" : ""}
+            </span>
+            {member.types.map((type) => (
+              <img key={type} src={typeIconSrc(type)} alt={TYPE_LABEL[type]} title={TYPE_LABEL[type]} className="h-4 w-4 shrink-0" />
+            ))}
           </span>
           <span className="shrink-0 text-[10px] font-bold text-panel-foreground/60">Niv. {member.level}</span>
         </div>

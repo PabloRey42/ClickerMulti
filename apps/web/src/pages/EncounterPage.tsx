@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Swords } from "lucide-react";
-import type { PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
+import type { ElementalType, PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
 import { ApiError } from "../api/client";
@@ -14,6 +14,7 @@ import {
 import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { useTeamStore } from "../state/teamStore";
+import { TYPE_LABEL, typeIconSrc } from "../theme/typeColors";
 
 function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: "hp" | "xp" }) {
   const barColor = color === "hp" ? "bg-stat-hp" : "bg-stat-xp";
@@ -33,11 +34,13 @@ function StatBar({ label, value, max, color }: { label: string; value: number; m
 function CombatantCard({
   name,
   level,
+  types,
   align,
   bars,
 }: {
   name: string;
   level: number;
+  types: ElementalType[];
   align: "left" | "right";
   bars: { label: string; value: number; max: number; color: "hp" | "xp" }[];
 }) {
@@ -48,7 +51,16 @@ function CombatantCard({
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-sm font-extrabold text-gold-light">{name}</span>
+        <span
+          className={`flex min-w-0 items-center gap-1 truncate text-sm font-extrabold text-gold-light ${
+            align === "right" ? "flex-row-reverse" : ""
+          }`}
+        >
+          <span className="truncate">{name}</span>
+          {types.map((type) => (
+            <img key={type} src={typeIconSrc(type)} alt={TYPE_LABEL[type]} title={TYPE_LABEL[type]} className="h-4 w-4 shrink-0" />
+          ))}
+        </span>
         <span className="shrink-0 text-[11px] font-bold text-panel-foreground/70">Niv. {level}</span>
       </div>
       <div className="mt-1.5 flex flex-col gap-1">
@@ -228,6 +240,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                 <CombatantCard
                   name={encounter.name}
                   level={encounter.level}
+                  types={encounter.types}
                   align="right"
                   bars={[{ label: "PV", value: encounter.currentHp, max: encounter.maxHp, color: "hp" }]}
                 />
@@ -246,6 +259,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                 <CombatantCard
                   name={creature.nickname ?? creature.name}
                   level={creature.level}
+                  types={creature.types}
                   align="left"
                   bars={[
                     { label: "PV", value: creature.currentHp, max: creature.maxHp, color: "hp" },
