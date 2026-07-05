@@ -1,0 +1,19 @@
+{
+  "name": "farm-clicker",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:server": "pnpm --filter @farm-clicker/server dev",
+    "dev:web": "pnpm --filter @farm-clicker/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "prisma:generate": "pnpm --filter @farm-clicker/server prisma:generate",
+    "prisma:migrate": "pnpm --filter @farm-clicker/server prisma:migrate"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "pnpm@9.7.0"
+}
