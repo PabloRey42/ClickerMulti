@@ -281,20 +281,26 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     const playerHpAfter = Math.max(0, activeCreature.currentHp - damageTaken);
     fainted = playerHpAfter <= 0;
 
+    const healthyTeammates = fainted
+      ? await tx.playerCreature.count({
+          where: { userId, isOnTeam: true, currentHp: { gt: 0 }, id: { not: activeCreature.id } },
+        })
+      : 0;
+    canSwitch = healthyTeammates > 0;
+
+    // Only clear "active" when there's actually another healthy teammate to switch into —
+    // that's a real choice the player needs to make. A full team wipe has no such choice,
+    // so the same creature stays flagged active and simply resumes once healed, instead of
+    // forcing a re-pick from the collection every time the whole team goes down.
     await tx.playerCreature.update({
       where: { id: activeCreature.id },
-      data: { currentHp: playerHpAfter, isActive: fainted ? false : true },
+      data: { currentHp: playerHpAfter, isActive: canSwitch ? false : true },
     });
 
     if (!fainted) {
       await tx.wildEncounter.update({ where: { userId }, data: { currentHp: wildHpAfter } });
       return;
     }
-
-    const healthyTeammates = await tx.playerCreature.count({
-      where: { userId, isOnTeam: true, currentHp: { gt: 0 }, id: { not: activeCreature.id } },
-    });
-    canSwitch = healthyTeammates > 0;
 
     if (canSwitch) {
       await tx.wildEncounter.update({ where: { userId }, data: { currentHp: wildHpAfter } });
