@@ -10,7 +10,8 @@ export interface SpeciesConfig {
   rarityWeight: number;
 }
 
-export const STARTER_SPECIES_KEY = "moineau";
+/** Offered to a new player on first login; a classic feu/eau/plante trio. */
+export const STARTER_SPECIES_KEYS = ["salamandre", "grenouille", "lierre"] as const;
 
 export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   moineau: {

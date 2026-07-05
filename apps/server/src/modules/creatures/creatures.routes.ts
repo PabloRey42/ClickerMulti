@@ -1,14 +1,44 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { sendJson } from "../../lib/json.js";
-import { listCreatures, activateCreature, CreatureNotFoundError, CreatureFaintedError } from "./creatures.service.js";
+import {
+  listCreatures,
+  activateCreature,
+  getStarterOptions,
+  chooseStarter,
+  CreatureNotFoundError,
+  CreatureFaintedError,
+  InvalidStarterError,
+  StarterAlreadyChosenError,
+} from "./creatures.service.js";
 
 const creatureParamsSchema = z.object({ id: z.string().min(1) });
+const chooseStarterSchema = z.object({ speciesKey: z.string().min(1) });
 
 export default async function creaturesRoutes(fastify: FastifyInstance) {
   fastify.get("/creatures", { preHandler: fastify.authenticate }, async (request, reply) => {
     const { sub: userId } = request.user;
     sendJson(reply, await listCreatures(fastify.prisma, userId));
+  });
+
+  fastify.get("/creatures/starter-options", { preHandler: fastify.authenticate }, async (_request, reply) => {
+    sendJson(reply, getStarterOptions());
+  });
+
+  fastify.post("/creatures/starter", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const parsed = chooseStarterSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_body" });
+
+    const { sub: userId } = request.user;
+    try {
+      sendJson(reply, await chooseStarter(fastify.prisma, userId, parsed.data.speciesKey));
+    } catch (err) {
+      if (err instanceof InvalidStarterError) return reply.code(400).send({ error: "invalid_starter" });
+      if (err instanceof StarterAlreadyChosenError) {
+        return reply.code(409).send({ error: "starter_already_chosen" });
+      }
+      throw err;
+    }
   });
 
   fastify.post(
