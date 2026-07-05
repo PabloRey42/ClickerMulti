@@ -1,16 +1,9 @@
 import { useEffect, useState } from "react";
-import type { SpeciesView, ElementalType } from "@farm-clicker/shared";
+import type { SpeciesView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { getStarterOptions, chooseStarter } from "../api/creatures";
 import { ApiError } from "../api/client";
-
-const TYPE_BADGE: Record<ElementalType, string> = {
-  normal: "bg-panel-light text-panel-foreground border-panel-foreground/30",
-  electrique: "bg-gold text-panel border-gold-deep",
-  eau: "bg-stat-xp text-panel-foreground border-stat-xp",
-  feu: "bg-stat-hp text-panel-foreground border-stat-hp",
-  plante: "bg-stat-hp text-panel-foreground border-stat-hp",
-};
+import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName } from "../theme/typeColors";
 
 export function StarterSelectPage({ onChosen }: { onChosen: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -70,14 +63,17 @@ export function StarterSelectPage({ onChosen }: { onChosen: () => void }) {
 
             <p className="text-sm font-extrabold text-gold-light">{species.name}</p>
 
-            <span
-              className={[
-                "mx-auto mt-1 inline-block rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
-                TYPE_BADGE[species.elementalType],
-              ].join(" ")}
-            >
-              {species.elementalType}
-            </span>
+            <div className="mx-auto mt-1 flex flex-wrap justify-center gap-1">
+              {species.types.map((type) => (
+                <span
+                  key={type}
+                  style={typeBadgeStyle(type)}
+                  className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${typeBadgeTextClassName(type)}`}
+                >
+                  {TYPE_LABEL[type]}
+                </span>
+              ))}
+            </div>
 
             <p className="mt-2 text-[10px] font-bold text-panel-foreground/60">
               ATT {species.baseAttack} · PV {species.baseHp}

@@ -6,14 +6,7 @@ import { useExplorationStore } from "../state/explorationStore";
 import { useBattleStore } from "../state/battleStore";
 import { getLeagueState, challengeLeague, investSpecializationPoint } from "../api/league";
 import { ApiError } from "../api/client";
-
-const TYPE_LABEL: Record<ElementalType, string> = {
-  normal: "Normal",
-  feu: "Feu",
-  eau: "Eau",
-  plante: "Plante",
-  electrique: "Électrik",
-};
+import { TYPE_LABEL } from "../theme/typeColors";
 
 export function LeaguePage() {
   const accessToken = useAuthStore((s) => s.accessToken);

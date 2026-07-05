@@ -241,21 +241,23 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     const wildSpecies = SPECIES_CATALOG[encounter.speciesKey];
 
     // Permanent bonuses: League rank boosts every attack; specialization boosts attacks
-    // from creatures whose type matches the invested type. Both apply everywhere, not
-    // just in League fights, so clearing the League actually makes the player stronger.
+    // from creatures whose type matches an invested type (dual-typed creatures get the
+    // best of either match). Both apply everywhere, not just in League fights, so
+    // clearing the League actually makes the player stronger.
     const progress = await tx.playerLeagueProgress.findUnique({ where: { userId } });
-    const specialization = await tx.playerSpecialization.findUnique({
-      where: { userId_elementalType: { userId, elementalType: playerSpecies.elementalType } },
+    const specializations = await tx.playerSpecialization.findMany({
+      where: { userId, elementalType: { in: playerSpecies.types } },
     });
+    const bestSpecializationPoints = specializations.reduce((max, s) => Math.max(max, s.pointsInvested), 0);
     const bonusMultiplier = leagueRankBonusMultiplier(progress?.rank ?? 0).mul(
-      specializationBonusMultiplier(specialization?.pointsInvested ?? 0),
+      specializationBonusMultiplier(bestSpecializationPoints),
     );
 
     const playerAttack = creatureAttack(playerSpecies.baseAttack, activeCreature.level);
     damageDealt = computeAttackDamage(
       playerAttack,
       comboMult.mul(bonusMultiplier),
-      typeMultiplier(playerSpecies.elementalType, wildSpecies.elementalType),
+      typeMultiplier(playerSpecies.types, wildSpecies.types),
     );
     const wildHpAfter = Math.max(0, encounter.currentHp - damageDealt);
 
@@ -276,7 +278,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     damageTaken = computeAttackDamage(
       wildAttack,
       new Decimal(1),
-      typeMultiplier(wildSpecies.elementalType, playerSpecies.elementalType),
+      typeMultiplier(wildSpecies.types, playerSpecies.types),
     );
     const playerHpAfter = Math.max(0, activeCreature.currentHp - damageTaken);
     fainted = playerHpAfter <= 0;

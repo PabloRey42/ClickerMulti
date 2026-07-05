@@ -4,7 +4,7 @@ export interface SpeciesView {
   key: string;
   name: string;
   dexNumber: number;
-  elementalType: ElementalType;
+  types: ElementalType[];
   baseAttack: number;
   baseHp: number;
   spriteFile: string;
@@ -15,7 +15,7 @@ export interface PlayerCreatureView {
   speciesKey: string;
   name: string;
   dexNumber: number;
-  elementalType: ElementalType;
+  types: ElementalType[];
   spriteFile: string;
   nickname: string | null;
   level: number;
@@ -33,7 +33,7 @@ export interface WildEncounterView {
   routeKey: string;
   speciesKey: string;
   name: string;
-  elementalType: ElementalType;
+  types: ElementalType[];
   spriteFile: string;
   level: number;
   currentHp: number;

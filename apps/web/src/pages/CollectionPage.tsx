@@ -1,19 +1,12 @@
 import { useEffect, useState } from "react";
-import { SPECIES_CATALOG, type PlayerCreatureView, type ElementalType } from "@farm-clicker/shared";
+import { SPECIES_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
 import { listCreatures, activateCreature, setTeamMembership } from "../api/creatures";
 import { ApiError } from "../api/client";
+import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName } from "../theme/typeColors";
 
 const DEX_ENTRIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - b.dexNumber);
-
-const TYPE_BADGE: Record<ElementalType, string> = {
-  normal: "bg-panel-light text-panel-foreground border-panel-foreground/30",
-  electrique: "bg-gold text-panel border-gold-deep",
-  eau: "bg-stat-xp text-panel-foreground border-stat-xp",
-  feu: "bg-stat-hp text-panel-foreground border-stat-hp",
-  plante: "bg-stat-hp text-panel-foreground border-stat-hp",
-};
 
 function pad(n: number) {
   return `#${n.toString().padStart(3, "0")}`;
@@ -121,14 +114,17 @@ export function CollectionPage() {
 
               <p className="text-sm font-extrabold text-gold-light">{species.name}</p>
 
-              <span
-                className={[
-                  "mx-auto mt-1 inline-block rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider",
-                  TYPE_BADGE[species.elementalType],
-                ].join(" ")}
-              >
-                {species.elementalType}
-              </span>
+              <div className="mx-auto mt-1 flex flex-wrap justify-center gap-1">
+                {species.types.map((type) => (
+                  <span
+                    key={type}
+                    style={typeBadgeStyle(type)}
+                    className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${typeBadgeTextClassName(type)}`}
+                  >
+                    {TYPE_LABEL[type]}
+                  </span>
+                ))}
+              </div>
 
               <div className="my-2 border-t border-dashed border-panel-foreground/20" />
 

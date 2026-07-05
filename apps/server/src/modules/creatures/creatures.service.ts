@@ -23,7 +23,7 @@ export function getStarterOptions(): SpeciesView[] {
       key: species.key,
       name: species.name,
       dexNumber: species.dexNumber,
-      elementalType: species.elementalType,
+      types: species.types,
       baseAttack: species.baseAttack,
       baseHp: species.baseHp,
       spriteFile: species.spriteFile,
