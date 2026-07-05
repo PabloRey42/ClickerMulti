@@ -129,41 +129,57 @@ export function EncounterPage({ cityId }: { cityId: string }) {
         </button>
       </div>
 
-      {encounter ? (
-        <>
-          <h2 className="encounter-name">
-            {encounter.name} (Nv. {encounter.level})
-          </h2>
-          <div className="hp-bar">
-            <div
-              className="hp-bar-fill"
-              style={{ width: `${(encounter.currentHp / encounter.maxHp) * 100}%` }}
+      <div className="battle-field">
+        {encounter && (
+          <div className="battle-slot battle-slot-enemy">
+            <div className="battle-hp-card">
+              <span className="battle-name">
+                {encounter.name} Nv.{encounter.level}
+              </span>
+              <div className="hp-bar">
+                <div
+                  className="hp-bar-fill"
+                  style={{ width: `${(encounter.currentHp / encounter.maxHp) * 100}%` }}
+                />
+              </div>
+              <span className="hp-label">
+                {encounter.currentHp} / {encounter.maxHp} PV
+              </span>
+            </div>
+            <img
+              src={`/sprites/${encounter.spriteFile}`}
+              alt={encounter.name}
+              className="battle-sprite"
             />
           </div>
-          <p className="hp-label">
-            {encounter.currentHp} / {encounter.maxHp} PV
-          </p>
-        </>
-      ) : (
-        <p>Aucune créature sauvage ici pour l'instant.</p>
-      )}
+        )}
 
-      {creature && (
-        <>
-          <h3 className="encounter-name">
-            {creature.nickname ?? creature.name} (Nv. {creature.level})
-          </h3>
-          <div className="hp-bar">
-            <div
-              className="hp-bar-fill hp-bar-fill-player"
-              style={{ width: `${(creature.currentHp / creature.maxHp) * 100}%` }}
+        {creature && (
+          <div className="battle-slot battle-slot-player">
+            <img
+              src={`/sprites/${creature.spriteFile}`}
+              alt={creature.name}
+              className="battle-sprite battle-sprite-player"
             />
+            <div className="battle-hp-card">
+              <span className="battle-name">
+                {creature.nickname ?? creature.name} Nv.{creature.level}
+              </span>
+              <div className="hp-bar">
+                <div
+                  className="hp-bar-fill hp-bar-fill-player"
+                  style={{ width: `${(creature.currentHp / creature.maxHp) * 100}%` }}
+                />
+              </div>
+              <span className="hp-label">
+                {creature.currentHp} / {creature.maxHp} PV
+              </span>
+            </div>
           </div>
-          <p className="hp-label">
-            {creature.currentHp} / {creature.maxHp} PV
-          </p>
-        </>
-      )}
+        )}
+
+        {!encounter && <p className="battle-empty">Aucune créature sauvage ici pour l'instant.</p>}
+      </div>
 
       {message && (
         <p className="gain-float" key={`msg-${hitCount}`}>

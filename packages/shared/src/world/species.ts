@@ -8,6 +8,8 @@ export interface SpeciesConfig {
   baseHp: number;
   baseCaptureRate: number;
   rarityWeight: number;
+  /** Filename under /sprites/ in the web app's public assets. */
+  spriteFile: string;
 }
 
 /** Offered to a new player on first login; a classic feu/eau/plante trio. */
@@ -22,6 +24,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 30,
     baseCaptureRate: 0.5,
     rarityWeight: 50,
+    spriteFile: "pidgey.png",
   },
   ecureuil: {
     key: "ecureuil",
@@ -31,6 +34,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 26,
     baseCaptureRate: 0.45,
     rarityWeight: 40,
+    spriteFile: "sentret.png",
   },
   salamandre: {
     key: "salamandre",
@@ -40,6 +44,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 28,
     baseCaptureRate: 0.35,
     rarityWeight: 30,
+    spriteFile: "charmander.png",
   },
   renardeau: {
     key: "renardeau",
@@ -49,6 +54,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 24,
     baseCaptureRate: 0.3,
     rarityWeight: 20,
+    spriteFile: "vulpix.png",
   },
   loutre: {
     key: "loutre",
@@ -58,6 +64,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 30,
     baseCaptureRate: 0.4,
     rarityWeight: 30,
+    spriteFile: "oshawott.png",
   },
   grenouille: {
     key: "grenouille",
@@ -67,6 +74,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 32,
     baseCaptureRate: 0.42,
     rarityWeight: 35,
+    spriteFile: "froakie.png",
   },
   lierre: {
     key: "lierre",
@@ -76,6 +84,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 34,
     baseCaptureRate: 0.45,
     rarityWeight: 35,
+    spriteFile: "oddish.png",
   },
   scarabee: {
     key: "scarabee",
@@ -85,6 +94,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 26,
     baseCaptureRate: 0.32,
     rarityWeight: 22,
+    spriteFile: "sewaddle.png",
   },
   "moucheron-foudre": {
     key: "moucheron-foudre",
@@ -94,6 +104,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 20,
     baseCaptureRate: 0.25,
     rarityWeight: 12,
+    spriteFile: "joltik.png",
   },
   "goupil-etincelle": {
     key: "goupil-etincelle",
@@ -103,5 +114,6 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     baseHp: 22,
     baseCaptureRate: 0.2,
     rarityWeight: 8,
+    spriteFile: "electrike.png",
   },
 };

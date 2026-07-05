@@ -22,6 +22,7 @@ export function getStarterOptions(): SpeciesView[] {
       elementalType: species.elementalType,
       baseAttack: species.baseAttack,
       baseHp: species.baseHp,
+      spriteFile: species.spriteFile,
     };
   });
 }

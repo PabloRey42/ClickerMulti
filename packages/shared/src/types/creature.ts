@@ -6,6 +6,7 @@ export interface SpeciesView {
   elementalType: ElementalType;
   baseAttack: number;
   baseHp: number;
+  spriteFile: string;
 }
 
 export interface PlayerCreatureView {
@@ -13,6 +14,7 @@ export interface PlayerCreatureView {
   speciesKey: string;
   name: string;
   elementalType: ElementalType;
+  spriteFile: string;
   nickname: string | null;
   level: number;
   xp: number;
@@ -29,6 +31,7 @@ export interface WildEncounterView {
   speciesKey: string;
   name: string;
   elementalType: ElementalType;
+  spriteFile: string;
   level: number;
   currentHp: number;
   maxHp: number;
