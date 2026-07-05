@@ -248,7 +248,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
               <img
                 src={`/sprites/${encounter.spriteFile}`}
                 alt={encounter.name}
-                className="absolute right-10 top-[40%] h-16 w-16 object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
+                className="absolute right-6 top-[32%] h-28 w-28 object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48"
               />
             </>
           )}
@@ -270,7 +270,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
               <img
                 src={`/sprites/${creature.spriteFile}`}
                 alt={creature.name}
-                className="absolute bottom-4 left-1/2 h-20 w-20 -translate-x-1/2 scale-x-[-1] object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]"
+                className="absolute bottom-2 left-1/2 h-32 w-32 -translate-x-1/2 scale-x-[-1] object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-60 sm:w-60"
               />
             </>
           )}
