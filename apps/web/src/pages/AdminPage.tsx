@@ -8,11 +8,13 @@ import {
 } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { ApiError } from "../api/client";
+import { creatureSpriteSrc } from "../theme/typeColors";
 import {
   listAdminUsers,
   getAdminUserDetail,
   setAdminUserGold,
   setAdminUserPassword,
+  setAdminForceShiny,
   giveAdminCreature,
   deleteAdminCreature,
   setAdminInventoryItem,
@@ -133,6 +135,11 @@ export function AdminPage() {
     handleAction(() => setAdminInventoryItem(accessToken!, selectedId, itemKey, quantity));
   }
 
+  function handleToggleForceShiny() {
+    if (!selectedId || !detail) return;
+    handleAction(() => setAdminForceShiny(accessToken!, selectedId, !detail.forceShinyMode));
+  }
+
   function handleDeleteUser() {
     if (!selectedId || !detail) return;
     if (!window.confirm(`Supprimer définitivement le compte "${detail.username}" et toutes ses données ?`)) return;
@@ -213,6 +220,27 @@ export function AdminPage() {
 
             <div className="rounded-xl border-2 border-gold-deep bg-panel p-3">
               <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+                Mode test — Shiny
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleToggleForceShiny}
+                  className={detail.forceShinyMode ? buttonClass : `${buttonClass} opacity-70`}
+                >
+                  {detail.forceShinyMode ? "Full shiny activé" : "Forcer full shiny"}
+                </button>
+                <span className="text-[10px] font-semibold text-panel-foreground/60">
+                  {detail.forceShinyMode
+                    ? "Toutes les rencontres futures sont shiny ; les Pokémon déjà possédés ont été passés en shiny."
+                    : "Force toutes les prochaines rencontres à être shiny et rend shiny tous les Pokémon déjà possédés."}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border-2 border-gold-deep bg-panel p-3">
+              <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
                 Mot de passe
               </h3>
               <div className="flex items-center gap-2">
@@ -272,12 +300,13 @@ export function AdminPage() {
                     className="flex items-center gap-3 rounded-lg border border-gold-deep/60 bg-panel-light px-2 py-1.5"
                   >
                     <img
-                      src={`/sprites/${c.spriteFile}`}
+                      src={creatureSpriteSrc(c.spriteFile, c.isShiny)}
                       alt={c.name}
-                      className="h-8 w-8 shrink-0 [image-rendering:pixelated]"
+                      className={`h-8 w-8 shrink-0 [image-rendering:pixelated] ${c.isShiny ? "shiny-sprite" : ""}`}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-extrabold text-gold-light">
+                        {c.isShiny ? "✨ " : ""}
                         {c.nickname ?? c.name} {c.isActive ? "★" : ""}
                       </p>
                       <p className="text-[10px] font-semibold text-panel-foreground/60">

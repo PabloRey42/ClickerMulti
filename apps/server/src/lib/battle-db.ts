@@ -49,6 +49,7 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     attack: creatureAttack(species.baseAttack, creature.level),
     isOnTeam: creature.isOnTeam,
     isActive: creature.isActive,
+    isShiny: creature.isShiny,
     caughtAt: creature.caughtAt.toISOString(),
   };
 }
@@ -64,7 +65,9 @@ export function buildEncounterView(encounter: WildEncounter): WildEncounterView 
     level: encounter.level,
     currentHp: encounter.currentHp,
     maxHp: encounter.maxHp,
+    isShiny: encounter.isShiny,
     isLeagueBattle: encounter.isLeagueBattle,
+    startedAt: encounter.startedAt.toISOString(),
   };
 }
 

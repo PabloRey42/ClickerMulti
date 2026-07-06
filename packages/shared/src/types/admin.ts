@@ -28,6 +28,7 @@ export interface AdminUserDetail {
   createdAt: string;
   goldBalance: bigint;
   autoHealEnabled: boolean;
+  forceShinyMode: boolean;
   leagueRank: number;
   unspentPoints: number;
   creatures: PlayerCreatureView[];

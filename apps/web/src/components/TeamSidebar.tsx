@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import type { PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
-import { TYPE_LABEL, typeIconSrc } from "../theme/typeColors";
+import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
 
 function TeamCard({ member }: { member: PlayerCreatureView }) {
   return (
@@ -12,12 +12,17 @@ function TeamCard({ member }: { member: PlayerCreatureView }) {
       }`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gold-deep/60 bg-panel-light">
-        <img src={`/sprites/${member.spriteFile}`} alt={member.name} className="h-9 w-9 [image-rendering:pixelated]" />
+        <img
+          src={creatureSpriteSrc(member.spriteFile, member.isShiny)}
+          alt={member.name}
+          className={`h-9 w-9 [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-1">
           <span className="flex min-w-0 items-center gap-1 truncate text-xs font-extrabold text-gold-light">
             <span className="truncate">
+              {member.isShiny ? "✨ " : ""}
               {member.nickname ?? member.name} {member.isActive ? "★" : ""}
             </span>
             {member.types.map((type) => (

@@ -26,6 +26,7 @@ export interface PlayerCreatureView {
   attack: number;
   isOnTeam: boolean;
   isActive: boolean;
+  isShiny: boolean;
   caughtAt: string;
 }
 
@@ -38,5 +39,10 @@ export interface WildEncounterView {
   level: number;
   currentHp: number;
   maxHp: number;
+  isShiny: boolean;
   isLeagueBattle: boolean;
+  /** Identifies this particular encounter instance (changes every reroll, even for a
+   * repeated species/level) so the client can detect "a genuinely new encounter just
+   * appeared" and trigger the shiny reveal exactly once instead of on every re-fetch. */
+  startedAt: string;
 }

@@ -49,6 +49,11 @@ export function typeIconSrc(type: ElementalType): string {
   return `/types/${type}.png`;
 }
 
+/** Shiny variants live under /sprites/shiny/ using the same filename as the normal sprite. */
+export function creatureSpriteSrc(spriteFile: string, isShiny: boolean): string {
+  return isShiny ? `/sprites/shiny/${spriteFile}` : `/sprites/${spriteFile}`;
+}
+
 /** Types whose accent color is light enough to need dark text for contrast. */
 const DARK_TEXT_TYPES = new Set<ElementalType>([
   "normal",

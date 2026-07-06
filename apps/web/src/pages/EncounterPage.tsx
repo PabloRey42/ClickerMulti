@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Swords } from "lucide-react";
 import type { ElementalType, PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
@@ -14,7 +14,42 @@ import {
 import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { useTeamStore } from "../state/teamStore";
-import { TYPE_LABEL, typeIconSrc } from "../theme/typeColors";
+import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
+import { playShinySound } from "../theme/shinySound";
+
+/** Fixed radiating offsets for the one-shot star burst — a real Pokémon shiny sparkle is a
+ * consistent pattern, not randomized, so there's no need for Math.random() here. */
+const SHINY_STAR_OFFSETS: { tx: number; ty: number; delay: number }[] = [
+  { tx: -60, ty: -50, delay: 0 },
+  { tx: 55, ty: -55, delay: 0.08 },
+  { tx: -70, ty: 10, delay: 0.16 },
+  { tx: 65, ty: 20, delay: 0.05 },
+  { tx: -20, ty: -70, delay: 0.22 },
+  { tx: 25, ty: 65, delay: 0.12 },
+];
+
+function ShinyBurst() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-visible">
+      <div className="shiny-reveal-ring" />
+      {SHINY_STAR_OFFSETS.map((star, i) => (
+        <span
+          key={i}
+          className="shiny-reveal-star text-2xl"
+          style={
+            {
+              "--star-tx": `${star.tx}px`,
+              "--star-ty": `${star.ty}px`,
+              animationDelay: `${star.delay}s`,
+            } as CSSProperties
+          }
+        >
+          ✦
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: "hp" | "xp" }) {
   const barColor = color === "hp" ? "bg-stat-hp" : "bg-stat-xp";
@@ -37,18 +72,20 @@ function CombatantCard({
   types,
   align,
   bars,
+  isShiny,
 }: {
   name: string;
   level: number;
   types: ElementalType[];
   align: "left" | "right";
   bars: { label: string; value: number; max: number; color: "hp" | "xp" }[];
+  isShiny?: boolean;
 }) {
   return (
     <div
-      className={`w-44 rounded-xl border-2 border-gold-deep bg-panel/90 px-3 py-2 shadow-lg backdrop-blur-sm ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
+      className={`w-44 rounded-xl border-2 px-3 py-2 shadow-lg backdrop-blur-sm ${
+        isShiny ? "border-[#ffe066] bg-panel/90" : "border-gold-deep bg-panel/90"
+      } ${align === "right" ? "text-right" : "text-left"}`}
     >
       <div className="flex items-baseline justify-between gap-2">
         <span
@@ -56,6 +93,7 @@ function CombatantCard({
             align === "right" ? "flex-row-reverse" : ""
           }`}
         >
+          {isShiny && <span title="Shiny">✨</span>}
           <span className="truncate">{name}</span>
           {types.map((type) => (
             <img key={type} src={typeIconSrc(type)} alt={TYPE_LABEL[type]} title={TYPE_LABEL[type]} className="h-4 w-4 shrink-0" />
@@ -99,6 +137,14 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       .then((catalog) => setPokeballs(catalog.pokeballs))
       .catch(() => {});
   }, [accessToken]);
+
+  // Plays the chime once per distinct encounter instance (startedAt changes on every
+  // reroll, even if the same species/level comes up twice in a row) instead of on every
+  // state refetch after an attack.
+  useEffect(() => {
+    if (state?.encounter?.isShiny) playShinySound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.encounter?.startedAt]);
 
   const awaitingSwitch = state !== null && state.encounter !== null && state.activeCreature === null;
 
@@ -178,7 +224,9 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
         prev.map((p) => (p.key === pokeballKey ? { ...p, owned: Math.max(0, p.owned - 1) } : p)),
       );
       setMessage(
-        result.success ? `${result.creature?.name} capturé !` : "Le Pokémon s'est échappé de la balle...",
+        result.success
+          ? `${result.creature?.isShiny ? "✨ " : ""}${result.creature?.name} capturé !`
+          : "Le Pokémon s'est échappé de la balle...",
       );
       triggerLevelUp(result.leveledUp);
       await refreshTeamSidebar(accessToken);
@@ -248,14 +296,20 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                   level={encounter.level}
                   types={encounter.types}
                   align="right"
+                  isShiny={encounter.isShiny}
                   bars={[{ label: "PV", value: encounter.currentHp, max: encounter.maxHp, color: "hp" }]}
                 />
               </div>
-              <img
-                src={`/sprites/${encounter.spriteFile}`}
-                alt={encounter.name}
-                className="absolute right-6 top-[32%] h-28 w-28 object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-48 sm:w-48"
-              />
+              <div className="absolute right-6 top-[32%] h-28 w-28 sm:h-48 sm:w-48">
+                {encounter.isShiny && <ShinyBurst key={encounter.startedAt} />}
+                <img
+                  src={creatureSpriteSrc(encounter.spriteFile, encounter.isShiny)}
+                  alt={encounter.name}
+                  className={`h-full w-full object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] ${
+                    encounter.isShiny ? "shiny-sprite" : ""
+                  }`}
+                />
+              </div>
             </>
           )}
 
@@ -267,6 +321,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                   level={creature.level}
                   types={creature.types}
                   align="left"
+                  isShiny={creature.isShiny}
                   bars={[
                     { label: "PV", value: creature.currentHp, max: creature.maxHp, color: "hp" },
                     { label: "XP", value: creature.xp, max: creature.xpToNextLevel, color: "xp" },
@@ -274,9 +329,11 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                 />
               </div>
               <img
-                src={`/sprites/${creature.spriteFile}`}
+                src={creatureSpriteSrc(creature.spriteFile, creature.isShiny)}
                 alt={creature.name}
-                className="absolute bottom-2 left-1/2 h-32 w-32 -translate-x-1/2 scale-x-[-1] object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-60 sm:w-60"
+                className={`absolute bottom-2 left-1/2 h-32 w-32 -translate-x-1/2 scale-x-[-1] object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-60 sm:w-60 ${
+                  creature.isShiny ? "shiny-sprite" : ""
+                }`}
               />
             </>
           )}

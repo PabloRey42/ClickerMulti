@@ -4,7 +4,7 @@ import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
 import { listCreatures, activateCreature, setTeamMembership, clearTeam } from "../api/creatures";
 import { ApiError } from "../api/client";
-import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName } from "../theme/typeColors";
+import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName, creatureSpriteSrc } from "../theme/typeColors";
 
 const DEX_ENTRIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - b.dexNumber);
 
@@ -120,6 +120,7 @@ export function CollectionPage() {
             const owned = creatures.filter((c) => c.speciesKey === species.key);
             const isOwned = owned.length > 0;
             const isExpanded = isOwned && expandedSpecies === species.key;
+            const anyShiny = owned.some((c) => c.isShiny);
 
             return (
               <li
@@ -135,7 +136,11 @@ export function CollectionPage() {
                   <span className="w-8 shrink-0 text-[10px] font-bold text-panel-foreground/50">{pad(species.dexNumber)}</span>
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-gold-deep/40 bg-panel-light">
                     {isOwned ? (
-                      <img src={`/sprites/${species.spriteFile}`} alt={species.name} className="h-5 w-5 [image-rendering:pixelated]" />
+                      <img
+                        src={creatureSpriteSrc(species.spriteFile, anyShiny)}
+                        alt={species.name}
+                        className={`h-5 w-5 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
+                      />
                     ) : (
                       <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
                     )}
@@ -148,7 +153,7 @@ export function CollectionPage() {
                   {isOwned && (
                     <>
                       <span className="shrink-0 truncate text-[10px] font-bold text-panel-foreground/60">
-                        {owned.map((c) => `Nv.${c.level}${c.isActive ? "★" : ""}`).join(" · ")}
+                        {owned.map((c) => `${c.isShiny ? "✨" : ""}Nv.${c.level}${c.isActive ? "★" : ""}`).join(" · ")}
                       </span>
                       <span className="shrink-0 text-[10px] font-bold text-gold-light/70">{isExpanded ? "▾" : "▸"}</span>
                     </>
@@ -163,6 +168,7 @@ export function CollectionPage() {
                         className="flex items-center justify-between gap-2 rounded-lg bg-panel-light px-2 py-1.5"
                       >
                         <p className="min-w-0 truncate text-[11px] font-bold text-panel-foreground/80">
+                          {c.isShiny ? "✨ " : ""}
                           {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
                         </p>
                         <div className="flex shrink-0 items-center gap-1.5">
@@ -217,15 +223,17 @@ export function CollectionPage() {
             );
           }
 
+          const anyShiny = owned.some((c) => c.isShiny);
+
           return (
             <li key={species.key} className="flex flex-col rounded-2xl border-2 border-gold-deep bg-panel p-3 text-center shadow-md">
               <span className="text-[11px] font-bold text-gold-light/70">{pad(species.dexNumber)}</span>
 
               <div className="mx-auto my-2 flex h-16 w-16 items-center justify-center rounded-xl border border-gold-deep/40 bg-panel-light">
                 <img
-                  src={`/sprites/${species.spriteFile}`}
+                  src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                   alt={species.name}
-                  className="h-11 w-11 [image-rendering:pixelated]"
+                  className={`h-11 w-11 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                 />
               </div>
 
@@ -248,6 +256,7 @@ export function CollectionPage() {
               {owned.map((c) => (
                 <div key={c.id} className="mt-2 flex flex-col gap-1 border-t border-panel-foreground/10 pt-2 first:mt-0 first:border-0 first:pt-0">
                   <p className="text-[11px] font-bold text-panel-foreground/80">
+                    {c.isShiny ? "✨ " : ""}
                     {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
                   </p>
                   <div className="flex flex-col gap-1">

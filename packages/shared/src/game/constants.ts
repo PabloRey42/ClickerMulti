@@ -17,3 +17,6 @@ export const MAX_LEVEL = 100;
 /** A player can never own more than this many of the same species at once (capture, auto-
  * capture, or buying one off the Hôtel des Ventes). Doesn't apply to admin gifts. */
 export const MAX_SAME_SPECIES_OWNED = 2;
+
+/** Odds that any freshly rolled wild encounter is shiny (classic modern-games rate). */
+export const SHINY_CHANCE = 1 / 4096;

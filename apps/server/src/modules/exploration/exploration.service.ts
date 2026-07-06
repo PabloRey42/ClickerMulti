@@ -20,6 +20,7 @@ import {
   specializationBonusMultiplier,
   findEncounterHotspot,
   MAX_SAME_SPECIES_OWNED,
+  SHINY_CHANCE,
   type EncounterTableEntry,
   type RouteHotspot,
   type DungeonHotspot,
@@ -63,12 +64,13 @@ function pickWeightedEntry(entries: EncounterTableEntry[], roll: number): Encoun
   return entries[entries.length - 1];
 }
 
-function rollEncounterData(hotspot: RouteHotspot | DungeonHotspot, routeKey: string) {
+function rollEncounterData(hotspot: RouteHotspot | DungeonHotspot, routeKey: string, forceShiny: boolean) {
   const entry = pickWeightedEntry(hotspot.encounterTable, Math.random());
   const level = entry.minLevel + Math.floor(Math.random() * (entry.maxLevel - entry.minLevel + 1));
   const species = SPECIES_CATALOG[entry.speciesKey];
   const maxHp = creatureMaxHp(species.baseHp, level);
-  return { routeKey, speciesKey: entry.speciesKey, level, currentHp: maxHp, maxHp };
+  const isShiny = forceShiny || Math.random() < SHINY_CHANCE;
+  return { routeKey, speciesKey: entry.speciesKey, level, currentHp: maxHp, maxHp, isShiny };
 }
 
 /** Routes have infinite wild creatures — once a fight ends (finish/capture/flee) a new one
@@ -78,10 +80,11 @@ async function rerollOrClearEncounter(
   tx: Prisma.TransactionClient,
   userId: string,
   routeKey: string,
+  forceShiny: boolean,
 ): Promise<void> {
   const hotspot = findEncounterHotspot(routeKey);
   if (hotspot && hotspot.encounterTable.length > 0) {
-    await tx.wildEncounter.update({ where: { userId }, data: rollEncounterData(hotspot, routeKey) });
+    await tx.wildEncounter.update({ where: { userId }, data: rollEncounterData(hotspot, routeKey, forceShiny) });
   } else {
     await tx.wildEncounter.delete({ where: { userId } });
   }
@@ -197,7 +200,7 @@ async function grantEncounterRewards(
 async function autoCaptureIfEnabled(
   tx: Prisma.TransactionClient,
   userId: string,
-  encounter: { speciesKey: string; level: number },
+  encounter: { speciesKey: string; level: number; isShiny: boolean },
   wildSpecies: SpeciesConfig,
 ): Promise<{ attempted: boolean; captured: boolean }> {
   const playerState = await tx.playerState.findUnique({ where: { userId } });
@@ -234,6 +237,7 @@ async function autoCaptureIfEnabled(
             level: encounter.level,
             currentHp: creatureMaxHp(wildSpecies.baseHp, encounter.level),
             isOnTeam: teamCount < MAX_TEAM_SIZE,
+            isShiny: encounter.isShiny,
           },
         });
         const goldGained = goldReward(encounter.level) / 2n;
@@ -269,7 +273,7 @@ export async function enterRoute(
   if (!hotspot || hotspot.encounterTable.length === 0) throw new RouteNotFoundError();
 
   await prisma.$transaction(async (tx) => {
-    await lockPlayerState(tx, userId);
+    const lockedState = await lockPlayerState(tx, userId);
 
     // A League battle always takes precedence, whatever route was requested — it must be
     // finished or fled before the player can go fight somewhere else. An in-progress
@@ -284,7 +288,7 @@ export async function enterRoute(
     if (!activeCreature) throw new NoActiveCreatureError();
     if (activeCreature.currentHp <= 0) throw new ActiveCreatureFaintedError();
 
-    const rolled = rollEncounterData(hotspot, routeKey);
+    const rolled = rollEncounterData(hotspot, routeKey, lockedState.forceShinyMode);
     await tx.wildEncounter.upsert({
       where: { userId },
       update: rolled,
@@ -384,13 +388,13 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
         const autoCapture = await autoCaptureIfEnabled(tx, userId, encounter, wildSpecies);
         if (autoCapture.captured) {
           await autoHealIfEnabled(tx, userId);
-          await rerollOrClearEncounter(tx, userId, encounter.routeKey);
+          await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
         } else if (autoCapture.attempted) {
           // Auto-capture was on but never landed (or ran out of balls) — still auto-finish
           // so a fully AFK player isn't left stuck waiting on a defeated encounter forever.
           await grantEncounterRewards(tx, userId, encounter.level);
           await autoHealIfEnabled(tx, userId);
-          await rerollOrClearEncounter(tx, userId, encounter.routeKey);
+          await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
         } else {
           await tx.wildEncounter.update({ where: { userId }, data: { currentHp: 0 } });
         }
@@ -453,7 +457,7 @@ export async function captureEncounter(
   let leveledUp = false;
 
   await prisma.$transaction(async (tx) => {
-    await lockPlayerState(tx, userId);
+    const lockedState = await lockPlayerState(tx, userId);
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
@@ -483,6 +487,7 @@ export async function captureEncounter(
           level: encounter.level,
           currentHp: creatureMaxHp(species.baseHp, encounter.level),
           isOnTeam: teamCount < MAX_TEAM_SIZE,
+          isShiny: encounter.isShiny,
         },
       });
       createdCreatureId = created.id;
@@ -498,7 +503,7 @@ export async function captureEncounter(
       await bumpQuestObjective(tx, userId, "capture_creature");
 
       await autoHealIfEnabled(tx, userId);
-      await rerollOrClearEncounter(tx, userId, encounter.routeKey);
+      await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
     }
   });
 
@@ -515,7 +520,7 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
   let leveledUp = false;
 
   await prisma.$transaction(async (tx) => {
-    await lockPlayerState(tx, userId);
+    const lockedState = await lockPlayerState(tx, userId);
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
@@ -523,7 +528,7 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
     ({ goldGained, xpGained, leveledUp } = await grantEncounterRewards(tx, userId, encounter.level));
 
     await autoHealIfEnabled(tx, userId);
-    await rerollOrClearEncounter(tx, userId, encounter.routeKey);
+    await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
   });
 
   const state = await buildExplorationState(prisma, userId);
@@ -532,10 +537,11 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
 
 export async function fleeEncounter(prisma: PrismaClient, userId: string): Promise<ExplorationStateResponse> {
   await prisma.$transaction(async (tx) => {
+    const lockedState = await lockPlayerState(tx, userId);
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
     await autoHealIfEnabled(tx, userId);
-    await rerollOrClearEncounter(tx, userId, encounter.routeKey);
+    await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
   });
 
   return buildExplorationState(prisma, userId);

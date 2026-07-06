@@ -39,6 +39,9 @@ model PlayerState {
   autoHealUnlocked    Boolean  @default(false)
   autoCaptureEnabled  Boolean  @default(false)
   autoCaptureUnlocked Boolean  @default(false)
+  /// Admin-only testing toggle: forces every new wild encounter (and, at the moment it's
+  /// switched on, every creature the player already owns) to be shiny.
+  forceShinyMode  Boolean  @default(false)
   updatedAt       DateTime @updatedAt
 }
 
@@ -67,6 +70,7 @@ model PlayerCreature {
   currentHp      Int
   isOnTeam       Boolean         @default(false)
   isActive       Boolean         @default(false)
+  isShiny        Boolean         @default(false)
   caughtAt       DateTime        @default(now())
   marketListings MarketListing[]
 
@@ -84,6 +88,7 @@ model WildEncounter {
   level               Int
   currentHp           Int
   maxHp               Int
+  isShiny             Boolean  @default(false)
   isLeagueBattle      Boolean  @default(false)
   leagueOpponentIndex Int      @default(0)
   startedAt           DateTime @default(now())

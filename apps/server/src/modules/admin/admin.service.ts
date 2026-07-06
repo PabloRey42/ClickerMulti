@@ -60,6 +60,7 @@ export async function getUserDetail(prisma: PrismaClient, userId: string): Promi
     createdAt: user.createdAt.toISOString(),
     goldBalance: user.playerState.goldBalance,
     autoHealEnabled: user.playerState.autoHealEnabled,
+    forceShinyMode: user.playerState.forceShinyMode,
     leagueRank: user.leagueProgress?.rank ?? 0,
     unspentPoints: user.leagueProgress?.unspentPoints ?? 0,
     creatures: user.playerCreatures.map(buildCreatureView),
@@ -84,6 +85,24 @@ export async function setGold(prisma: PrismaClient, userId: string, goldBalance:
 
 /** Also revokes existing refresh tokens so the old password can't keep an existing
  * session alive — the player has to log back in with the new one. */
+/** Testing toggle: forces every future wild encounter to be shiny for this account, and
+ * — when switching it on — also retroactively marks every creature already owned as
+ * shiny, so the whole account lights up instantly instead of only new catches. */
+export async function setForceShinyMode(
+  prisma: PrismaClient,
+  userId: string,
+  enabled: boolean,
+): Promise<AdminUserDetail> {
+  await assertUserExists(prisma, userId);
+  await prisma.$transaction(async (tx) => {
+    await tx.playerState.update({ where: { userId }, data: { forceShinyMode: enabled } });
+    if (enabled) {
+      await tx.playerCreature.updateMany({ where: { userId }, data: { isShiny: true } });
+    }
+  });
+  return getUserDetail(prisma, userId);
+}
+
 export async function setPassword(prisma: PrismaClient, userId: string, newPassword: string): Promise<AdminUserDetail> {
   await assertUserExists(prisma, userId);
   const passwordHash = await hashPassword(newPassword);
@@ -104,12 +123,15 @@ export async function giveCreature(
   const species = SPECIES_CATALOG[speciesKey];
   if (!species) throw new InvalidSpeciesError();
 
+  const playerState = await prisma.playerState.findUnique({ where: { userId } });
+
   await prisma.playerCreature.create({
     data: {
       userId,
       speciesKey,
       level,
       currentHp: creatureMaxHp(species.baseHp, level),
+      isShiny: playerState?.forceShinyMode ?? false,
     },
   });
   return getUserDetail(prisma, userId);
