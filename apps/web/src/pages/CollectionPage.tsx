@@ -134,12 +134,12 @@ export function CollectionPage() {
                   className="flex w-full items-center gap-2 px-2 py-1 text-left disabled:cursor-default"
                 >
                   <span className="w-8 shrink-0 text-[10px] font-bold text-panel-foreground/50">{pad(species.dexNumber)}</span>
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-gold-deep/40 bg-panel-light">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded border border-gold-deep/40 bg-panel-light">
                     {isOwned ? (
                       <img
                         src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                         alt={species.name}
-                        className={`h-6 w-6 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
+                        className={`h-7 w-7 scale-150 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                       />
                     ) : (
                       <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
@@ -229,11 +229,11 @@ export function CollectionPage() {
             <li key={species.key} className="flex flex-col rounded-2xl border-2 border-gold-deep bg-panel p-3 text-center shadow-md">
               <span className="text-[11px] font-bold text-gold-light/70">{pad(species.dexNumber)}</span>
 
-              <div className="mx-auto my-2 flex h-16 w-16 items-center justify-center rounded-xl border border-gold-deep/40 bg-panel-light">
+              <div className="mx-auto my-2 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-gold-deep/40 bg-panel-light">
                 <img
                   src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                   alt={species.name}
-                  className={`h-14 w-14 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
+                  className={`h-16 w-16 scale-150 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                 />
               </div>
 
