@@ -129,6 +129,21 @@ export async function giveCreature(
   return getUserDetail(prisma, userId);
 }
 
+/** Admin override, bypasses the normal shiny-slot cap (same as other admin actions). */
+export async function setCreatureShiny(
+  prisma: PrismaClient,
+  userId: string,
+  creatureId: string,
+  isShiny: boolean,
+): Promise<AdminUserDetail> {
+  await assertUserExists(prisma, userId);
+  const creature = await prisma.playerCreature.findFirst({ where: { id: creatureId, userId } });
+  if (!creature) throw new CreatureNotFoundError();
+
+  await prisma.playerCreature.update({ where: { id: creatureId }, data: { isShiny } });
+  return getUserDetail(prisma, userId);
+}
+
 export async function deleteCreature(
   prisma: PrismaClient,
   userId: string,

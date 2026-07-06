@@ -10,6 +10,7 @@ import {
   setPassword,
   setForceShinyMode,
   giveCreature,
+  setCreatureShiny,
   deleteCreature,
   setInventoryItem,
   deleteUser,
@@ -27,6 +28,7 @@ const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
 const forceShinyBodySchema = z.object({ enabled: z.boolean() });
 const passwordBodySchema = z.object({ password: z.string().min(8).max(100) });
 const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(MAX_LEVEL) });
+const creatureShinyBodySchema = z.object({ isShiny: z.boolean() });
 const itemBodySchema = z.object({ quantity: z.number().int().min(0).max(999999) });
 
 export default async function adminRoutes(fastify: FastifyInstance) {
@@ -101,6 +103,23 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     } catch (err) {
       if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
       if (err instanceof InvalidSpeciesError) return reply.code(400).send({ error: "invalid_species" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/users/:userId/creatures/:creatureId/shiny", async (request, reply) => {
+    const params = creatureParamsSchema.safeParse(request.params);
+    const body = creatureShinyBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(
+        reply,
+        await setCreatureShiny(fastify.prisma, params.data.userId, params.data.creatureId, body.data.isShiny),
+      );
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      if (err instanceof CreatureNotFoundError) return reply.code(404).send({ error: "creature_not_found" });
       throw err;
     }
   });

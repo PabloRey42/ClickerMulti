@@ -16,6 +16,7 @@ import {
   setAdminUserPassword,
   setAdminForceShiny,
   giveAdminCreature,
+  setAdminCreatureShiny,
   deleteAdminCreature,
   setAdminInventoryItem,
   deleteAdminUser,
@@ -126,6 +127,11 @@ export function AdminPage() {
   function handleDeleteCreature(creatureId: string) {
     if (!selectedId) return;
     handleAction(() => deleteAdminCreature(accessToken!, selectedId, creatureId));
+  }
+
+  function handleToggleCreatureShiny(creatureId: string, isShiny: boolean) {
+    if (!selectedId) return;
+    handleAction(() => setAdminCreatureShiny(accessToken!, selectedId, creatureId, !isShiny));
   }
 
   function handleSetItem(itemKey: string) {
@@ -313,6 +319,19 @@ export function AdminPage() {
                         Nv.{c.level} · {c.currentHp}/{c.maxHp} PV · {c.isOnTeam ? "en équipe" : "au repos"}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => handleToggleCreatureShiny(c.id, c.isShiny)}
+                      className={[
+                        "shrink-0 rounded-full border px-2 py-1 text-[10px] font-black uppercase disabled:opacity-50",
+                        c.isShiny
+                          ? "border-[#ffe066] bg-[#ffe066]/20 text-[#ffe066]"
+                          : "border-gold-deep text-gold-light",
+                      ].join(" ")}
+                    >
+                      {c.isShiny ? "Retirer shiny" : "Rendre shiny"}
+                    </button>
                     <button
                       type="button"
                       disabled={busy}

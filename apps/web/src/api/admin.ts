@@ -41,6 +41,14 @@ export function giveAdminCreature(accessToken: string, userId: string, speciesKe
   });
 }
 
+export function setAdminCreatureShiny(accessToken: string, userId: string, creatureId: string, isShiny: boolean) {
+  return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/creatures/${creatureId}/shiny`, {
+    method: "PATCH",
+    accessToken,
+    body: { isShiny },
+  });
+}
+
 export function deleteAdminCreature(accessToken: string, userId: string, creatureId: string) {
   return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/creatures/${creatureId}`, {
     method: "DELETE",

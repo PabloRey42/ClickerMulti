@@ -184,7 +184,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   rattata: { key: "rattata", name: "Rattata", dexNumber: 19, types: ["normal"], baseAttack: 7, baseHp: 22, baseCaptureRate: 0.55, rarityWeight: 40, spriteFile: "rattata.png" },
   zigzagoon: { key: "zigzagoon", name: "Zigzaton", dexNumber: 263, types: ["normal"], baseAttack: 8, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 32, spriteFile: "zigzagoon.png" },
   bidoof: { key: "bidoof", name: "Keunotor", dexNumber: 399, types: ["normal"], baseAttack: 6, baseHp: 28, baseCaptureRate: 0.55, rarityWeight: 28, spriteFile: "bidoof.png" },
-  lillipup: { key: "lillipup", name: "Ratentif", dexNumber: 506, types: ["normal"], baseAttack: 9, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 20, spriteFile: "lillipup.png" },
+  lillipup: { key: "lillipup", name: "Ratentif", dexNumber: 506, types: ["normal"], baseAttack: 9, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 20, spriteFile: "patrat.png" },
   eevee: { key: "eevee", name: "Évoli", dexNumber: 133, types: ["normal"], baseAttack: 10, baseHp: 26, baseCaptureRate: 0.35, rarityWeight: 6, spriteFile: "eevee.png" },
 
   // --- Route 3 (normal, mid tier — evolved forms of Route 1's family) ---
