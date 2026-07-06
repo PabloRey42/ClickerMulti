@@ -159,12 +159,15 @@ model MarketListing {
 
 enum QuestStatus {
   IN_PROGRESS
-  COMPLETED
+  READY_TO_CLAIM
+  CLAIMED
 }
 
-/// Tracks quest progress against the static QUEST_CATALOG in @farm-clicker/shared. Quests
-/// auto-activate the moment their prerequisite is cleared (no separate "accept" step) and
-/// auto-complete + auto-grant their reward the moment every objective hits its target.
+/// Tracks quest progress against the static QUEST_CATALOG in @farm-clicker/shared. A quest
+/// must be explicitly accepted from its NPC (one row created here) and only one quest can
+/// be IN_PROGRESS/READY_TO_CLAIM per player at a time. Objectives track passively once
+/// accepted; hitting every target moves it to READY_TO_CLAIM, and the reward is only
+/// granted once the player returns to the NPC and claims it (-> CLAIMED).
 model PlayerQuestProgress {
   id                String      @id @default(cuid())
   userId            String

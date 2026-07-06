@@ -13,6 +13,7 @@ import { StarterSelectPage } from "./pages/StarterSelectPage";
 import { AdminPage } from "./pages/AdminPage";
 import { TeamSidebar } from "./components/TeamSidebar";
 import { RouteEncounterSidebar } from "./components/RouteEncounterSidebar";
+import { ActiveQuestTracker } from "./components/ActiveQuestTracker";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
@@ -158,7 +159,14 @@ export function App() {
           </button>
         </nav>
       }
-      left={section === "explore" ? <RouteEncounterSidebar /> : undefined}
+      left={
+        section === "explore" ? (
+          <div className="flex flex-col gap-4">
+            <RouteEncounterSidebar />
+            <ActiveQuestTracker />
+          </div>
+        ) : undefined
+      }
       right={section === "admin" ? undefined : <TeamSidebar />}
     >
       {section === "collection" && <CollectionPage />}

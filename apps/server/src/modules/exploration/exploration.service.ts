@@ -380,6 +380,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
         const result = await resolveLeagueVictory(tx, userId, encounter);
         leagueCleared = result.cleared;
       } else {
+        await bumpQuestObjective(tx, userId, "win_battle_on_route", 1, { routeKey: encounter.routeKey });
         const autoCapture = await autoCaptureIfEnabled(tx, userId, encounter, wildSpecies);
         if (autoCapture.captured) {
           await autoHealIfEnabled(tx, userId);

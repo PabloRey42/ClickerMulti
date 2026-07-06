@@ -12,3 +12,17 @@ export function pingQuestObjective(accessToken: string, type: "visit_world_map")
     body: { type },
   });
 }
+
+export function acceptQuest(accessToken: string, questKey: string) {
+  return apiRequest<QuestStateResponse>(`/api/quests/${questKey}/accept`, {
+    method: "POST",
+    accessToken,
+  });
+}
+
+export function claimQuest(accessToken: string, questKey: string) {
+  return apiRequest<QuestStateResponse>(`/api/quests/${questKey}/claim`, {
+    method: "POST",
+    accessToken,
+  });
+}
