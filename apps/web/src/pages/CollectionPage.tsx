@@ -140,11 +140,34 @@ export function CollectionPage() {
                   {isOwned ? species.name : "???"}
                 </span>
                 {isOwned && (
-                  <span className="shrink-0 truncate text-[10px] font-bold text-panel-foreground/60">
-                    {owned
-                      .map((c) => `Nv.${c.level}${c.isActive ? "★" : ""}${c.isOnTeam ? "" : " (hors équipe)"}`)
-                      .join(" · ")}
-                  </span>
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                    {owned.map((c) => (
+                      <div key={c.id} className="flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-panel-foreground/60">
+                          Nv.{c.level}
+                          {c.isActive ? "★" : ""}
+                          {c.isOnTeam ? "" : " (hors équipe)"}
+                        </span>
+                        <select
+                          value=""
+                          disabled={busyId === c.id}
+                          onChange={(e) => {
+                            const action = e.target.value;
+                            e.target.value = "";
+                            if (action === "team") handleToggleTeam(c);
+                            if (action === "activate") handleActivate(c);
+                          }}
+                          className="rounded border border-gold-deep/50 bg-panel-light px-1 py-0.5 text-[9px] font-bold text-gold-light outline-none disabled:opacity-50"
+                        >
+                          <option value="">⋮</option>
+                          <option value="team">{c.isOnTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</option>
+                          <option value="activate" disabled={!c.isOnTeam || c.currentHp <= 0 || c.isActive}>
+                            Définir actif
+                          </option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </li>
             );

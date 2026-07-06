@@ -103,8 +103,14 @@ export function creatureAttack(baseAttack: number, level: number): number {
   return Math.round(baseAttack + (level - 1) * baseAttack * 0.15);
 }
 
+/** Same base curve as before (20 * level^1.4), scaled by a growing multiplier so late
+ * levels get much grindier than early ones: ~1.36x at level 10, 10x at level 50, 37x at
+ * level 100. Changing this requires re-running the one-off migration in
+ * `apps/server/src/scripts/relevel-creatures.ts` so existing creatures drop to the level
+ * their already-earned XP actually buys under the new curve. */
 export function xpToNextLevel(level: number): number {
-  return Math.round(20 * Math.pow(level, 1.4));
+  const lateGameMultiplier = 1 + Math.pow((3 * level) / 50, 2);
+  return Math.round(20 * Math.pow(level, 1.4) * lateGameMultiplier);
 }
 
 export function goldReward(defeatedLevel: number): bigint {

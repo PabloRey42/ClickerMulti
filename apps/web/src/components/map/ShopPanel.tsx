@@ -73,7 +73,6 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
       setGold(result.goldBalance);
       setPokeballs((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
       setPotions((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
-      setQuantityFor(key, 1);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
