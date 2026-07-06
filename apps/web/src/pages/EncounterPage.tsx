@@ -235,7 +235,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
         if (err.status === 401) return logout();
         const body = err.body as { error?: string } | undefined;
         if (body?.error === "duplicate_species_limit") {
-          setMessage("Tu possèdes déjà 2 exemplaires de ce Pokémon.");
+          setMessage("Tu as déjà atteint la limite pour ce Pokémon (2 classiques + 1 shiny).");
         }
       }
     } finally {

@@ -20,6 +20,7 @@ import {
   specializationBonusMultiplier,
   findEncounterHotspot,
   MAX_SAME_SPECIES_OWNED,
+  MAX_SHINY_SAME_SPECIES_OWNED,
   SHINY_CHANCE,
   type EncounterTableEntry,
   type RouteHotspot,
@@ -206,9 +207,14 @@ async function autoCaptureIfEnabled(
   const playerState = await tx.playerState.findUnique({ where: { userId } });
   if (!playerState?.autoCaptureEnabled) return { attempted: false, captured: false };
 
-  // Already at the species cap — don't waste balls on a capture that can never land.
-  const ownedCount = await tx.playerCreature.count({ where: { userId, speciesKey: encounter.speciesKey } });
-  if (ownedCount >= MAX_SAME_SPECIES_OWNED) return { attempted: true, captured: false };
+  // Already at the species cap — don't waste balls on a capture that can never land. Shiny
+  // and non-shiny each have their own separate slot(s), so a shiny doesn't compete with the
+  // two regular slots (or vice versa).
+  const speciesCap = encounter.isShiny ? MAX_SHINY_SAME_SPECIES_OWNED : MAX_SAME_SPECIES_OWNED;
+  const ownedCount = await tx.playerCreature.count({
+    where: { userId, speciesKey: encounter.speciesKey, isShiny: encounter.isShiny },
+  });
+  if (ownedCount >= speciesCap) return { attempted: true, captured: false };
 
   const ballsByCheapest = Object.values(POKEBALL_CATALOG).sort((a, b) => Number(a.goldCost - b.goldCost));
   let anyBallThrown = false;
@@ -462,8 +468,11 @@ export async function captureEncounter(
     if (!encounter) throw new NoEncounterError();
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
 
-    const ownedCount = await tx.playerCreature.count({ where: { userId, speciesKey: encounter.speciesKey } });
-    if (ownedCount >= MAX_SAME_SPECIES_OWNED) throw new DuplicateSpeciesLimitError();
+    const speciesCap = encounter.isShiny ? MAX_SHINY_SAME_SPECIES_OWNED : MAX_SAME_SPECIES_OWNED;
+    const ownedCount = await tx.playerCreature.count({
+      where: { userId, speciesKey: encounter.speciesKey, isShiny: encounter.isShiny },
+    });
+    if (ownedCount >= speciesCap) throw new DuplicateSpeciesLimitError();
 
     const inventory = await tx.playerInventoryItem.findUnique({
       where: { userId_itemKey: { userId, itemKey: pokeballKey } },

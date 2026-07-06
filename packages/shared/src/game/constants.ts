@@ -14,9 +14,15 @@ export const MAX_TEAM_SIZE = 6;
 /** No creature can level past this, ever (level-up, capture, admin gift — all sources). */
 export const MAX_LEVEL = 100;
 
-/** A player can never own more than this many of the same species at once (capture, auto-
- * capture, or buying one off the Hôtel des Ventes). Doesn't apply to admin gifts. */
+/** A player can never own more than this many *non-shiny* of the same species at once
+ * (capture, auto-capture, or buying one off the Hôtel des Ventes). Doesn't apply to admin
+ * gifts. Shiny copies have their own separate slot — see MAX_SHINY_SAME_SPECIES_OWNED. */
 export const MAX_SAME_SPECIES_OWNED = 2;
+
+/** Shiny copies of a species are capped separately from (and in addition to) the regular
+ * cap above — one dedicated shiny slot per species, so catching a shiny never competes
+ * with the two regular slots. */
+export const MAX_SHINY_SAME_SPECIES_OWNED = 1;
 
 /** Odds that any freshly rolled wild encounter is shiny (classic modern-games rate). */
 export const SHINY_CHANCE = 1 / 4096;

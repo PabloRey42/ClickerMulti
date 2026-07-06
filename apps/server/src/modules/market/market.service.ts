@@ -3,6 +3,7 @@ import {
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
   MAX_SAME_SPECIES_OWNED,
+  MAX_SHINY_SAME_SPECIES_OWNED,
   type MarketListingView,
   type MarketListingsResponse,
 } from "@farm-clicker/shared";
@@ -185,10 +186,11 @@ export async function buyListing(
 
     if (listing.assetType === "CREATURE" && listing.creatureId) {
       const creature = await tx.playerCreature.findUniqueOrThrow({ where: { id: listing.creatureId } });
+      const speciesCap = creature.isShiny ? MAX_SHINY_SAME_SPECIES_OWNED : MAX_SAME_SPECIES_OWNED;
       const ownedCount = await tx.playerCreature.count({
-        where: { userId: buyerId, speciesKey: creature.speciesKey },
+        where: { userId: buyerId, speciesKey: creature.speciesKey, isShiny: creature.isShiny },
       });
-      if (ownedCount >= MAX_SAME_SPECIES_OWNED) throw new DuplicateSpeciesLimitError();
+      if (ownedCount >= speciesCap) throw new DuplicateSpeciesLimitError();
 
       await tx.playerCreature.update({
         where: { id: listing.creatureId },
