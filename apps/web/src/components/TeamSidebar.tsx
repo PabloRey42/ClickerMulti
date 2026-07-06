@@ -11,11 +11,11 @@ function TeamCard({ member }: { member: PlayerCreatureView }) {
         member.isActive ? "border-gold" : "border-gold-deep"
       }`}
     >
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-gold-deep/60 bg-panel-light">
+      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg border border-gold-deep/60 bg-panel-light">
         <img
           src={creatureSpriteSrc(member.spriteFile, member.isShiny)}
           alt={member.name}
-          className={`h-14 w-14 object-contain [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
+          className={`h-20 w-20 object-contain [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
         />
       </div>
       <div className="min-w-0 flex-1">
