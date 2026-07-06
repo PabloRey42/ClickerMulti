@@ -15,7 +15,7 @@ function TeamCard({ member }: { member: PlayerCreatureView }) {
         <img
           src={creatureSpriteSrc(member.spriteFile, member.isShiny)}
           alt={member.name}
-          className={`h-9 w-9 [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
+          className={`h-10 w-10 object-contain [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
         />
       </div>
       <div className="min-w-0 flex-1">

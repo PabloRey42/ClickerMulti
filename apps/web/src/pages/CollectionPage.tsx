@@ -139,7 +139,7 @@ export function CollectionPage() {
                       <img
                         src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                         alt={species.name}
-                        className={`h-5 w-5 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
+                        className={`h-6 w-6 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                       />
                     ) : (
                       <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
@@ -233,7 +233,7 @@ export function CollectionPage() {
                 <img
                   src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                   alt={species.name}
-                  className={`h-11 w-11 [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
+                  className={`h-14 w-14 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                 />
               </div>
 
