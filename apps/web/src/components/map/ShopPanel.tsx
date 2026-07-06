@@ -4,6 +4,37 @@ import { useAuthStore } from "../../state/authStore";
 import { getShopCatalog, buyItem } from "../../api/shop";
 import { ApiError } from "../../api/client";
 
+function QuantityStepper({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        disabled={value <= 1}
+        onClick={() => onChange(value - 1)}
+        className="h-6 w-6 rounded-full border border-gold-deep text-xs font-black text-gold-light disabled:opacity-30"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={1}
+        max={99}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 1)}
+        className="h-6 w-10 rounded-lg border border-gold-deep bg-panel px-1 text-center text-xs font-bold text-gold-light outline-none"
+      />
+      <button
+        type="button"
+        disabled={value >= 99}
+        onClick={() => onChange(value + 1)}
+        className="h-6 w-6 rounded-full border border-gold-deep text-xs font-black text-gold-light disabled:opacity-30"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 export function ShopPanel({ onClose }: { onClose: () => void }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
@@ -11,6 +42,15 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [potions, setPotions] = useState<PotionCatalogEntry[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  function quantityFor(key: string) {
+    return quantities[key] ?? 1;
+  }
+
+  function setQuantityFor(key: string, quantity: number) {
+    setQuantities((prev) => ({ ...prev, [key]: Math.min(99, Math.max(1, quantity)) }));
+  }
 
   useEffect(() => {
     if (!accessToken) return;
@@ -29,10 +69,11 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
     if (!accessToken) return;
     setBuying(key);
     try {
-      const result = await buyItem(accessToken, key);
+      const result = await buyItem(accessToken, key, quantityFor(key));
       setGold(result.goldBalance);
       setPokeballs((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
       setPotions((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
+      setQuantityFor(key, 1);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -65,15 +106,16 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
                   Possédé : {p.owned} · ×{p.catchMultiplier} capture
                 </p>
               </div>
+              <QuantityStepper value={quantityFor(p.key)} onChange={(v) => setQuantityFor(p.key, v)} />
               <button
                 type="button"
-                disabled={buying === p.key || (gold !== null && gold < p.goldCost)}
+                disabled={buying === p.key || (gold !== null && gold < p.goldCost * BigInt(quantityFor(p.key)))}
                 onClick={() => handleBuy(p.key)}
                 className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-center text-[10px] font-black uppercase leading-tight text-panel disabled:opacity-50"
               >
                 Acheter
                 <br />
-                {p.goldCost.toString()}
+                {(p.goldCost * BigInt(quantityFor(p.key))).toString()}
               </button>
             </li>
           ))}
@@ -90,15 +132,16 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
                   Possédé : {p.owned} · soigne {p.healAmount >= 9999 ? "tout" : `${p.healAmount} PV`}
                 </p>
               </div>
+              <QuantityStepper value={quantityFor(p.key)} onChange={(v) => setQuantityFor(p.key, v)} />
               <button
                 type="button"
-                disabled={buying === p.key || (gold !== null && gold < p.goldCost)}
+                disabled={buying === p.key || (gold !== null && gold < p.goldCost * BigInt(quantityFor(p.key)))}
                 onClick={() => handleBuy(p.key)}
                 className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-center text-[10px] font-black uppercase leading-tight text-panel disabled:opacity-50"
               >
                 Acheter
                 <br />
-                {p.goldCost.toString()}
+                {(p.goldCost * BigInt(quantityFor(p.key))).toString()}
               </button>
             </li>
           ))}

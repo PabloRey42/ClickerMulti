@@ -42,22 +42,29 @@ function findShopItem(itemKey: string): { goldCost: bigint } | undefined {
   return POKEBALL_CATALOG[itemKey] ?? POTION_CATALOG[itemKey];
 }
 
-export async function buyItem(prisma: PrismaClient, userId: string, itemKey: string): Promise<BuyItemResponse> {
+export async function buyItem(
+  prisma: PrismaClient,
+  userId: string,
+  itemKey: string,
+  quantity = 1,
+): Promise<BuyItemResponse> {
   const item = findShopItem(itemKey);
   if (!item) throw new InvalidItemError();
 
+  const totalCost = item.goldCost * BigInt(quantity);
+
   return prisma.$transaction(async (tx) => {
     const playerState = await lockPlayerState(tx, userId);
-    if (playerState.goldBalance < item.goldCost) throw new InsufficientGoldError();
+    if (playerState.goldBalance < totalCost) throw new InsufficientGoldError();
 
     const updatedState = await tx.playerState.update({
       where: { userId },
-      data: { goldBalance: playerState.goldBalance - item.goldCost },
+      data: { goldBalance: playerState.goldBalance - totalCost },
     });
     const inventory = await tx.playerInventoryItem.upsert({
       where: { userId_itemKey: { userId, itemKey } },
-      update: { quantity: { increment: 1 } },
-      create: { userId, itemKey, quantity: 1 },
+      update: { quantity: { increment: quantity } },
+      create: { userId, itemKey, quantity },
     });
 
     if (itemKey in POTION_CATALOG) {

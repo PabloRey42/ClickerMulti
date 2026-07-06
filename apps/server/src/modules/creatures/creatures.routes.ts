@@ -5,6 +5,7 @@ import {
   listCreatures,
   activateCreature,
   setTeamMembership,
+  clearTeamExceptActive,
   getStarterOptions,
   chooseStarter,
   CreatureNotFoundError,
@@ -82,4 +83,9 @@ export default async function creaturesRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.post("/creatures/team/clear", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const { sub: userId } = request.user;
+    sendJson(reply, await clearTeamExceptActive(fastify.prisma, userId));
+  });
 }

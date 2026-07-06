@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { SPECIES_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
-import { listCreatures, activateCreature, setTeamMembership } from "../api/creatures";
+import { listCreatures, activateCreature, setTeamMembership, clearTeam } from "../api/creatures";
 import { ApiError } from "../api/client";
 import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName } from "../theme/typeColors";
 
@@ -19,6 +19,7 @@ export function CollectionPage() {
   const [creatures, setCreatures] = useState<PlayerCreatureView[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [compact, setCompact] = useState(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -65,6 +66,20 @@ export function CollectionPage() {
     }
   }
 
+  async function handleClearTeam() {
+    if (!accessToken || busyId) return;
+    setBusyId("__clear-team__");
+    setError(null);
+    try {
+      setCreatures(await clearTeam(accessToken));
+      await refreshTeamSidebar(accessToken);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) logout();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const discoveredCount = DEX_ENTRIES.filter((species) =>
     creatures.some((c) => c.speciesKey === species.key),
   ).length;
@@ -78,8 +93,64 @@ export function CollectionPage() {
         </span>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setCompact((v) => !v)}
+          className="rounded-full border-2 border-gold-deep bg-panel px-3 py-1.5 text-[11px] font-extrabold text-gold-light transition-colors hover:bg-panel-light"
+        >
+          {compact ? "Vue détaillée" : "Vue compacte"}
+        </button>
+        <button
+          type="button"
+          disabled={busyId === "__clear-team__"}
+          onClick={handleClearTeam}
+          className="rounded-full border-2 border-gold-deep bg-panel px-3 py-1.5 text-[11px] font-extrabold text-gold-light transition-colors hover:bg-panel-light disabled:opacity-50"
+        >
+          Tout retirer de l'équipe
+        </button>
+      </div>
+
       {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
 
+      {compact ? (
+        <ul className="flex flex-col gap-1.5">
+          {DEX_ENTRIES.map((species) => {
+            const owned = creatures.filter((c) => c.speciesKey === species.key);
+            const isOwned = owned.length > 0;
+
+            return (
+              <li
+                key={species.key}
+                className={`flex items-center gap-2 rounded-lg border px-2 py-1 ${
+                  isOwned ? "border-gold-deep bg-panel" : "border-panel-foreground/15 bg-panel/50"
+                }`}
+              >
+                <span className="w-8 shrink-0 text-[10px] font-bold text-panel-foreground/50">{pad(species.dexNumber)}</span>
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-gold-deep/40 bg-panel-light">
+                  {isOwned ? (
+                    <img src={`/sprites/${species.spriteFile}`} alt={species.name} className="h-5 w-5 [image-rendering:pixelated]" />
+                  ) : (
+                    <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
+                  )}
+                </div>
+                <span
+                  className={`min-w-0 flex-1 truncate text-xs font-extrabold ${isOwned ? "text-gold-light" : "text-panel-foreground/40"}`}
+                >
+                  {isOwned ? species.name : "???"}
+                </span>
+                {isOwned && (
+                  <span className="shrink-0 truncate text-[10px] font-bold text-panel-foreground/60">
+                    {owned
+                      .map((c) => `Nv.${c.level}${c.isActive ? "★" : ""}${c.isOnTeam ? "" : " (hors équipe)"}`)
+                      .join(" · ")}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {DEX_ENTRIES.map((species) => {
           const owned = creatures.filter((c) => c.speciesKey === species.key);
@@ -180,6 +251,7 @@ export function CollectionPage() {
           );
         })}
       </ul>
+      )}
     </section>
   );
 }

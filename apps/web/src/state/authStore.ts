@@ -14,6 +14,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   setSession: (session: StoredAuth) => void;
+  setAccessToken: (accessToken: string) => void;
   logout: () => void;
 }
 
@@ -36,6 +37,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSession: (session) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     set({ user: session.user, accessToken: session.accessToken, refreshToken: session.refreshToken });
+  },
+  setAccessToken: (accessToken) => {
+    set((state) => {
+      if (!state.user || !state.refreshToken) return state;
+      const stored: StoredAuth = { user: state.user, accessToken, refreshToken: state.refreshToken };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      return { accessToken };
+    });
   },
   logout: () => {
     localStorage.removeItem(STORAGE_KEY);

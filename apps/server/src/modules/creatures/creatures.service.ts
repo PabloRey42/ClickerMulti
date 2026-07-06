@@ -118,3 +118,26 @@ export async function setTeamMembership(
 
   return listCreatures(prisma, userId);
 }
+
+/** Removes every creature from the team except the active one — a player must always
+ * have an active creature to battle, so it's kept on the team rather than cleared too. */
+export async function clearTeamExceptActive(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
+  await prisma.$transaction(async (tx) => {
+    let active = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
+    if (!active) {
+      const fallback = await tx.playerCreature.findFirst({
+        where: { userId, isOnTeam: true },
+        orderBy: { caughtAt: "asc" },
+      });
+      if (!fallback) return;
+      active = await tx.playerCreature.update({ where: { id: fallback.id }, data: { isActive: true } });
+    }
+
+    await tx.playerCreature.updateMany({
+      where: { userId, isOnTeam: true, id: { not: active.id } },
+      data: { isOnTeam: false, isActive: false },
+    });
+  });
+
+  return listCreatures(prisma, userId);
+}

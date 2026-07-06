@@ -31,3 +31,10 @@ export function setTeamMembership(accessToken: string, creatureId: string, onTea
     body: { onTeam },
   });
 }
+
+export function clearTeam(accessToken: string) {
+  return apiRequest<PlayerCreatureView[]>("/api/creatures/team/clear", {
+    method: "POST",
+    accessToken,
+  });
+}
