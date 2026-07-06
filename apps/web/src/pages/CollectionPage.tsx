@@ -20,6 +20,7 @@ export function CollectionPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [compact, setCompact] = useState(false);
+  const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -118,53 +119,75 @@ export function CollectionPage() {
           {DEX_ENTRIES.map((species) => {
             const owned = creatures.filter((c) => c.speciesKey === species.key);
             const isOwned = owned.length > 0;
+            const isExpanded = isOwned && expandedSpecies === species.key;
 
             return (
               <li
                 key={species.key}
-                className={`flex items-center gap-2 rounded-lg border px-2 py-1 ${
-                  isOwned ? "border-gold-deep bg-panel" : "border-panel-foreground/15 bg-panel/50"
-                }`}
+                className={`rounded-lg border ${isOwned ? "border-gold-deep bg-panel" : "border-panel-foreground/15 bg-panel/50"}`}
               >
-                <span className="w-8 shrink-0 text-[10px] font-bold text-panel-foreground/50">{pad(species.dexNumber)}</span>
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-gold-deep/40 bg-panel-light">
-                  {isOwned ? (
-                    <img src={`/sprites/${species.spriteFile}`} alt={species.name} className="h-5 w-5 [image-rendering:pixelated]" />
-                  ) : (
-                    <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
-                  )}
-                </div>
-                <span
-                  className={`min-w-0 flex-1 truncate text-xs font-extrabold ${isOwned ? "text-gold-light" : "text-panel-foreground/40"}`}
+                <button
+                  type="button"
+                  disabled={!isOwned}
+                  onClick={() => setExpandedSpecies((prev) => (prev === species.key ? null : species.key))}
+                  className="flex w-full items-center gap-2 px-2 py-1 text-left disabled:cursor-default"
                 >
-                  {isOwned ? species.name : "???"}
-                </span>
-                {isOwned && (
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                  <span className="w-8 shrink-0 text-[10px] font-bold text-panel-foreground/50">{pad(species.dexNumber)}</span>
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-gold-deep/40 bg-panel-light">
+                    {isOwned ? (
+                      <img src={`/sprites/${species.spriteFile}`} alt={species.name} className="h-5 w-5 [image-rendering:pixelated]" />
+                    ) : (
+                      <span className="h-4 w-4 rounded-full bg-panel-foreground/20" />
+                    )}
+                  </div>
+                  <span
+                    className={`min-w-0 flex-1 truncate text-xs font-extrabold ${isOwned ? "text-gold-light" : "text-panel-foreground/40"}`}
+                  >
+                    {isOwned ? species.name : "???"}
+                  </span>
+                  {isOwned && (
+                    <>
+                      <span className="shrink-0 truncate text-[10px] font-bold text-panel-foreground/60">
+                        {owned.map((c) => `Nv.${c.level}${c.isActive ? "★" : ""}`).join(" · ")}
+                      </span>
+                      <span className="shrink-0 text-[10px] font-bold text-gold-light/70">{isExpanded ? "▾" : "▸"}</span>
+                    </>
+                  )}
+                </button>
+
+                {isExpanded && (
+                  <div className="flex flex-col gap-1.5 border-t border-gold-deep/30 px-2 py-2">
                     {owned.map((c) => (
-                      <div key={c.id} className="flex items-center gap-1">
-                        <span className="text-[10px] font-bold text-panel-foreground/60">
-                          Nv.{c.level}
-                          {c.isActive ? "★" : ""}
-                          {c.isOnTeam ? "" : " (hors équipe)"}
-                        </span>
-                        <select
-                          value=""
-                          disabled={busyId === c.id}
-                          onChange={(e) => {
-                            const action = e.target.value;
-                            e.target.value = "";
-                            if (action === "team") handleToggleTeam(c);
-                            if (action === "activate") handleActivate(c);
-                          }}
-                          className="rounded border border-gold-deep/50 bg-panel-light px-1 py-0.5 text-[9px] font-bold text-gold-light outline-none disabled:opacity-50"
-                        >
-                          <option value="">⋮</option>
-                          <option value="team">{c.isOnTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</option>
-                          <option value="activate" disabled={!c.isOnTeam || c.currentHp <= 0 || c.isActive}>
-                            Définir actif
-                          </option>
-                        </select>
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-panel-light px-2 py-1.5"
+                      >
+                        <p className="min-w-0 truncate text-[11px] font-bold text-panel-foreground/80">
+                          {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
+                        </p>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={busyId === c.id}
+                            onClick={() => handleToggleTeam(c)}
+                            className="rounded-lg bg-stat-xp px-2 py-1 text-[10px] font-extrabold text-panel-foreground shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                          >
+                            {c.isOnTeam ? "Retirer" : "Ajouter"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
+                            onClick={() => handleActivate(c)}
+                            className={[
+                              "rounded-lg px-2 py-1 text-[10px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
+                              c.isActive
+                                ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
+                                : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
+                            ].join(" ")}
+                          >
+                            Actif
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
