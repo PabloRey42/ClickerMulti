@@ -17,6 +17,14 @@ export function setAdminUserGold(accessToken: string, userId: string, goldBalanc
   });
 }
 
+export function setAdminUserPassword(accessToken: string, userId: string, password: string) {
+  return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/password`, {
+    method: "PATCH",
+    accessToken,
+    body: { password },
+  });
+}
+
 export function giveAdminCreature(accessToken: string, userId: string, speciesKey: string, level: number) {
   return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/creatures`, {
     method: "POST",

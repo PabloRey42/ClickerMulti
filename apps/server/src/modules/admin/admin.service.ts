@@ -8,6 +8,7 @@ import {
   type AdminUserDetail,
 } from "@farm-clicker/shared";
 import { buildCreatureView } from "../../lib/battle-db.js";
+import { hashPassword } from "../auth/auth.service.js";
 
 export class UserNotFoundError extends Error {}
 export class InvalidSpeciesError extends Error {}
@@ -78,6 +79,18 @@ async function assertUserExists(prisma: PrismaClient, userId: string): Promise<v
 export async function setGold(prisma: PrismaClient, userId: string, goldBalance: bigint): Promise<AdminUserDetail> {
   await assertUserExists(prisma, userId);
   await prisma.playerState.update({ where: { userId }, data: { goldBalance } });
+  return getUserDetail(prisma, userId);
+}
+
+/** Also revokes existing refresh tokens so the old password can't keep an existing
+ * session alive — the player has to log back in with the new one. */
+export async function setPassword(prisma: PrismaClient, userId: string, newPassword: string): Promise<AdminUserDetail> {
+  await assertUserExists(prisma, userId);
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+    prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
   return getUserDetail(prisma, userId);
 }
 

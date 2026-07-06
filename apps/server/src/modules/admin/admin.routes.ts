@@ -7,6 +7,7 @@ import {
   listUsers,
   getUserDetail,
   setGold,
+  setPassword,
   giveCreature,
   deleteCreature,
   setInventoryItem,
@@ -22,6 +23,7 @@ const creatureParamsSchema = z.object({ userId: z.string().min(1), creatureId: z
 const itemParamsSchema = z.object({ userId: z.string().min(1), itemKey: z.string().min(1) });
 
 const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
+const passwordBodySchema = z.object({ password: z.string().min(8).max(100) });
 const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(MAX_LEVEL) });
 const itemBodySchema = z.object({ quantity: z.number().int().min(0).max(999999) });
 
@@ -52,6 +54,19 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
     try {
       sendJson(reply, await setGold(fastify.prisma, params.data.userId, BigInt(body.data.goldBalance)));
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/users/:userId/password", async (request, reply) => {
+    const params = userParamsSchema.safeParse(request.params);
+    const body = passwordBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(reply, await setPassword(fastify.prisma, params.data.userId, body.data.password));
     } catch (err) {
       if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
       throw err;

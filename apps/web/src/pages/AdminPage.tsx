@@ -12,6 +12,7 @@ import {
   listAdminUsers,
   getAdminUserDetail,
   setAdminUserGold,
+  setAdminUserPassword,
   giveAdminCreature,
   deleteAdminCreature,
   setAdminInventoryItem,
@@ -38,6 +39,8 @@ export function AdminPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [goldInput, setGoldInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [creatureSpecies, setCreatureSpecies] = useState(ALL_SPECIES[0]?.key ?? "");
   const [creatureLevel, setCreatureLevel] = useState("5");
   const [itemQuantities, setItemQuantities] = useState<Record<string, string>>({});
@@ -66,6 +69,8 @@ export function AdminPage() {
       const d = await getAdminUserDetail(accessToken, userId);
       setDetail(d);
       setGoldInput(d.goldBalance.toString());
+      setPasswordInput("");
+      setPasswordMessage(null);
       const quantities: Record<string, string> = {};
       for (const item of ALL_ITEMS) {
         quantities[item.key] = String(d.inventoryItems.find((i) => i.itemKey === item.key)?.quantity ?? 0);
@@ -97,6 +102,16 @@ export function AdminPage() {
   function handleSetGold() {
     if (!selectedId || !/^\d+$/.test(goldInput)) return;
     handleAction(() => setAdminUserGold(accessToken!, selectedId, goldInput));
+  }
+
+  function handleSetPassword() {
+    if (!selectedId || passwordInput.length < 8) return;
+    setPasswordMessage(null);
+    handleAction(async () => {
+      await setAdminUserPassword(accessToken!, selectedId, passwordInput);
+      setPasswordInput("");
+      setPasswordMessage("Mot de passe changé.");
+    });
   }
 
   function handleGiveCreature() {
@@ -193,6 +208,30 @@ export function AdminPage() {
                 <span className="text-[10px] font-semibold text-panel-foreground/60">
                   Ligue : rang {detail.leagueRank}, {detail.unspentPoints} pt(s) non dépensé(s)
                 </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border-2 border-gold-deep bg-panel p-3">
+              <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+                Mot de passe
+              </h3>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Nouveau mot de passe (8 caractères min.)"
+                  className={`${inputClass} w-64`}
+                />
+                <button
+                  type="button"
+                  disabled={busy || passwordInput.length < 8}
+                  onClick={handleSetPassword}
+                  className={buttonClass}
+                >
+                  Changer
+                </button>
+                {passwordMessage && <span className="text-[10px] font-bold text-stat-xp">{passwordMessage}</span>}
               </div>
             </div>
 
