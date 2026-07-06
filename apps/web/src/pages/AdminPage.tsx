@@ -229,12 +229,12 @@ export function AdminPage() {
                   onClick={handleToggleForceShiny}
                   className={detail.forceShinyMode ? buttonClass : `${buttonClass} opacity-70`}
                 >
-                  {detail.forceShinyMode ? "Full shiny activé" : "Forcer full shiny"}
+                  {detail.forceShinyMode ? "Rencontres shiny activées" : "Forcer les rencontres shiny"}
                 </button>
                 <span className="text-[10px] font-semibold text-panel-foreground/60">
                   {detail.forceShinyMode
-                    ? "Toutes les rencontres futures sont shiny ; les Pokémon déjà possédés ont été passés en shiny."
-                    : "Force toutes les prochaines rencontres à être shiny et rend shiny tous les Pokémon déjà possédés."}
+                    ? "Tous les prochains Pokémon sauvages rencontrés seront shiny (les Pokémon déjà possédés ne sont pas modifiés)."
+                    : "Force tous les prochains Pokémon sauvages rencontrés à être shiny, sans toucher aux Pokémon déjà possédés."}
                 </span>
               </div>
             </div>
