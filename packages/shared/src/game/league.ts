@@ -1,9 +1,10 @@
 import Decimal from "decimal.js";
-import { MAX_LEVEL } from "./constants.js";
 
 export const LEAGUE_ROSTER_SIZE = 6;
 export const LEAGUE_BASE_LEVEL = 40;
-export const LEAGUE_LEVEL_PER_RANK = 4;
+// Calibrated so rank 12 opponents are exactly level 200 (40 + 12 * 40/3 = 200). Trainer
+// Pokémon aren't player-owned creatures, so they aren't bound by the player's MAX_LEVEL cap.
+export const LEAGUE_LEVEL_PER_RANK = LEAGUE_BASE_LEVEL / 3;
 export const LEAGUE_RANK_BONUS_PER_RANK = 0.02;
 
 export interface LeagueOpponent {
@@ -12,7 +13,7 @@ export interface LeagueOpponent {
 }
 
 export function leagueOpponentLevel(rank: number): number {
-  return Math.min(MAX_LEVEL, LEAGUE_BASE_LEVEL + rank * LEAGUE_LEVEL_PER_RANK);
+  return Math.round(LEAGUE_BASE_LEVEL + rank * LEAGUE_LEVEL_PER_RANK);
 }
 
 /** Deterministic given (rank, speciesKeys) so it can be recomputed at any point during a
