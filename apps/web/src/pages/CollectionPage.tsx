@@ -21,6 +21,7 @@ export function CollectionPage() {
   const [error, setError] = useState<string | null>(null);
   const [compact, setCompact] = useState(false);
   const [expandedSpecies, setExpandedSpecies] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!accessToken) return;
@@ -85,6 +86,15 @@ export function CollectionPage() {
     creatures.some((c) => c.speciesKey === species.key),
   ).length;
 
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredEntries = normalizedSearch
+    ? DEX_ENTRIES.filter(
+        (species) =>
+          species.name.toLowerCase().includes(normalizedSearch) ||
+          species.dexNumber.toString().includes(normalizedSearch),
+      )
+    : DEX_ENTRIES;
+
   return (
     <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
       <div className="mb-4 flex items-baseline justify-center gap-3">
@@ -92,6 +102,16 @@ export function CollectionPage() {
         <span className="text-xs font-bold text-panel-foreground/60">
           {discoveredCount}/{DEX_ENTRIES.length} découverts
         </span>
+      </div>
+
+      <div className="mx-auto mb-4 w-full max-w-xs">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un Pokémon..."
+          className="w-full rounded-full border-2 border-gold-deep bg-panel px-4 py-2 text-xs font-semibold text-panel-foreground placeholder:text-panel-foreground/40 outline-none focus:border-gold"
+        />
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
@@ -114,9 +134,13 @@ export function CollectionPage() {
 
       {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
 
+      {filteredEntries.length === 0 && (
+        <p className="mb-3 text-center text-xs font-bold text-panel-foreground/50">Aucun Pokémon trouvé.</p>
+      )}
+
       {compact ? (
         <ul className="flex flex-col gap-1.5">
-          {DEX_ENTRIES.map((species) => {
+          {filteredEntries.map((species) => {
             const owned = creatures.filter((c) => c.speciesKey === species.key);
             const isOwned = owned.length > 0;
             const isExpanded = isOwned && expandedSpecies === species.key;
@@ -204,7 +228,7 @@ export function CollectionPage() {
         </ul>
       ) : (
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {DEX_ENTRIES.map((species) => {
+        {filteredEntries.map((species) => {
           const owned = creatures.filter((c) => c.speciesKey === species.key);
           const isOwned = owned.length > 0;
 
