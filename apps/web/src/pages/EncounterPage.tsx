@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Swords } from "lucide-react";
-import type { ElementalType, PlayerCreatureView, PokeballCatalogEntry } from "@farm-clicker/shared";
+import type { ElementalType, PlayerCreatureView, PokeballCatalogEntry, ShinyCaptureInfo } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useBattleStore } from "../state/battleStore";
 import { ApiError } from "../api/client";
@@ -17,6 +17,7 @@ import { useTeamStore } from "../state/teamStore";
 import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
 import { playShinySound } from "../theme/shinySound";
 import { LeagueVictoryModal } from "../components/LeagueVictoryModal";
+import { ShinyCaptureModal } from "../components/ShinyCaptureModal";
 
 /** Fixed radiating offsets for the one-shot star burst — a real Pokémon shiny sparkle is a
  * consistent pattern, not randomized, so there's no need for Math.random() here. */
@@ -123,6 +124,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   const [levelUpKey, setLevelUpKey] = useState(0);
   const [justLeveledUp, setJustLeveledUp] = useState(false);
   const [showLeagueVictory, setShowLeagueVictory] = useState(false);
+  const [shinyReveal, setShinyReveal] = useState<ShinyCaptureInfo | null>(null);
 
   useEffect(() => {
     if (!accessToken || state) return;
@@ -171,7 +173,9 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
     try {
       const result = await attackEncounter(accessToken);
       applyAttack(result.state, result.damageDealt, result.damageTaken);
-      if (result.leagueCleared) {
+      if (result.capturedShiny) {
+        setShinyReveal(result.capturedShiny);
+      } else if (result.leagueCleared) {
         setShowLeagueVictory(true);
       } else if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
@@ -225,11 +229,11 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       setPokeballs((prev) =>
         prev.map((p) => (p.key === pokeballKey ? { ...p, owned: Math.max(0, p.owned - 1) } : p)),
       );
-      setMessage(
-        result.success
-          ? `${result.creature?.isShiny ? "✨ " : ""}${result.creature?.name} capturé !`
-          : "Le Pokémon s'est échappé de la balle...",
-      );
+      if (result.success && result.creature?.isShiny) {
+        setShinyReveal({ name: result.creature.name, spriteFile: result.creature.spriteFile });
+      } else {
+        setMessage(result.success ? `${result.creature?.name} capturé !` : "Le Pokémon s'est échappé de la balle...");
+      }
       triggerLevelUp(result.leveledUp);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
@@ -460,6 +464,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       </div>
 
       {showLeagueVictory && <LeagueVictoryModal onClose={handleCloseLeagueVictory} />}
+      {shinyReveal && <ShinyCaptureModal creature={shinyReveal} onDone={() => setShinyReveal(null)} />}
     </div>
   );
 }

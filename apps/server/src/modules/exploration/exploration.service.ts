@@ -392,6 +392,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   let fainted = false;
   let canSwitch = false;
   let leagueCleared = false;
+  let capturedShiny: { name: string; spriteFile: string } | null = null;
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -433,6 +434,9 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
       } else {
         await bumpQuestObjective(tx, userId, "win_battle_on_route", 1, { routeKey: encounter.routeKey });
         const autoCapture = await autoCaptureIfEnabled(tx, userId, encounter, wildSpecies, skillBonuses);
+        if (autoCapture.captured && encounter.isShiny) {
+          capturedShiny = { name: wildSpecies.name, spriteFile: wildSpecies.spriteFile };
+        }
         if (autoCapture.captured) {
           await autoHealIfEnabled(tx, userId);
           await rerollOrClearEncounter(
@@ -500,7 +504,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   });
 
   const state = await buildExplorationState(prisma, userId);
-  return { state, damageDealt, damageTaken, victory, fainted, canSwitch, leagueCleared };
+  return { state, damageDealt, damageTaken, victory, fainted, canSwitch, leagueCleared, capturedShiny };
 }
 
 export async function captureEncounter(

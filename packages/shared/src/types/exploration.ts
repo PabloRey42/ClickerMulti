@@ -10,6 +10,11 @@ export interface ExplorationStateResponse {
   autoCaptureUnlocked: boolean;
 }
 
+export interface ShinyCaptureInfo {
+  name: string;
+  spriteFile: string;
+}
+
 export interface AttackResponse {
   state: ExplorationStateResponse;
   damageDealt: number;
@@ -20,6 +25,9 @@ export interface AttackResponse {
   canSwitch: boolean;
   /** True if this attack just cleared a League run (whole trainer roster defeated). */
   leagueCleared: boolean;
+  /** Set when auto-capture just landed on a shiny — the client shows the same big reveal
+   * as a manual shiny capture, so AFK/autoclicker farming can't silently skip past it. */
+  capturedShiny: ShinyCaptureInfo | null;
 }
 
 export interface CaptureResponse {
