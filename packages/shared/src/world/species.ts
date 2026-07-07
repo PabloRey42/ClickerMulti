@@ -173,8 +173,10 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
     name: "Mew",
     dexNumber: 151,
     types: ["psy"],
-    baseAttack: 25,
-    baseHp: 50,
+    // Nerfed 20% from the original 25/50 — it fights at level 30 (see lumina.ts) while the
+    // rest of Route 3 is level 6-9, so its combat stats needed to come down to compensate.
+    baseAttack: 20,
+    baseHp: 40,
     baseCaptureRate: 0.03,
     rarityWeight: 1,
     spriteFile: "mew.png",

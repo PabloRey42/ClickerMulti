@@ -116,10 +116,10 @@ export const AURORA_CITY_MAP: CityMapConfig = {
         { speciesKey: "furret", minLevel: 6, maxLevel: 9, rarityWeight: 4000, captureRate: 0.35 },
         { speciesKey: "meowth", minLevel: 6, maxLevel: 9, rarityWeight: 2500, captureRate: 0.4 },
         { speciesKey: "buneary", minLevel: 6, maxLevel: 9, rarityWeight: 1499, captureRate: 0.4 },
-        // Ultra-rare: exactly 1/25000 (1 / (10000+7000+4000+2500+1499+1)). Level matches the
-        // rest of the route now — it used to be hardcoded to 30, a huge unfair power spike
-        // against a team built for level 6-9 encounters.
-        { speciesKey: "mew", minLevel: 6, maxLevel: 9, rarityWeight: 1, captureRate: 0.03 },
+        // Ultra-rare: exactly 1/25000 (1 / (10000+7000+4000+2500+1499+1)). Deliberately
+        // level 30 (way above the rest of the route) as a boss-tier encounter — its base
+        // stats are toned down (see species.ts) to keep that from being unfair.
+        { speciesKey: "mew", minLevel: 30, maxLevel: 30, rarityWeight: 1, captureRate: 0.03 },
       ],
       shape: { xPercent: 62, yPercent: 64, radiusPercent: 2.5 },
     },
