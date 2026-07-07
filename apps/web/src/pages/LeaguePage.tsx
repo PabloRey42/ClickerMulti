@@ -198,7 +198,7 @@ function SkillTreePanel({
 
         <div className="grid grid-cols-5 gap-2 sm:gap-4">
           {SKILL_TREE_BRANCHES.map((branch) => {
-            const tier = league.skillTree[branch.id] ?? 0;
+            const tier = league.skillTree?.[branch.id] ?? 0;
             return (
               <div key={branch.id} className="flex flex-col items-center gap-2">
                 <span className="text-lg sm:text-xl">{branch.icon}</span>
