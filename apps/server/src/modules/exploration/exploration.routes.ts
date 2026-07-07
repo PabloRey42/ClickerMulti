@@ -22,6 +22,7 @@ import {
   AutoHealLockedError,
   AutoCaptureLockedError,
   DuplicateSpeciesLimitError,
+  LeagueInProgressError,
 } from "./exploration.service.js";
 
 const routeParamsSchema = z.object({ routeKey: z.string().min(1) });
@@ -131,7 +132,12 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
 
   fastify.post("/exploration/heal", { preHandler: fastify.authenticate }, async (request, reply) => {
     const { sub: userId } = request.user;
-    sendJson(reply, await healTeam(fastify.prisma, userId));
+    try {
+      sendJson(reply, await healTeam(fastify.prisma, userId));
+    } catch (err) {
+      if (err instanceof LeagueInProgressError) return reply.code(409).send({ error: "league_in_progress" });
+      throw err;
+    }
   });
 
   fastify.post("/exploration/auto-heal", { preHandler: fastify.authenticate }, async (request, reply) => {

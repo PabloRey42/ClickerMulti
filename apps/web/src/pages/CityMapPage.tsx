@@ -23,6 +23,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   no_active_creature: "Tu n'as aucun Pokémon actif.",
   active_creature_fainted: "Ton Pokémon actif est K.O. — soigne-le d'abord.",
   route_not_found: "Cette zone n'a pas encore de contenu.",
+  league_in_progress: "Impossible de soigner ton équipe pendant un combat de Ligue.",
 };
 
 export function CityMapPage({ cityId }: { cityId: string }) {
@@ -93,7 +94,11 @@ export function CityMapPage({ cityId }: { cityId: string }) {
       setSelected(null);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) logout();
+      if (err instanceof ApiError) {
+        if (err.status === 401) return logout();
+        const body = err.body as { error?: string } | undefined;
+        setError((body?.error && ERROR_MESSAGES[body.error]) ?? "Impossible de soigner ton équipe.");
+      }
     } finally {
       setBusy(false);
     }

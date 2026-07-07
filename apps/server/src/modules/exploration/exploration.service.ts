@@ -52,6 +52,7 @@ export class InsufficientPokeballsError extends Error {}
 export class AutoHealLockedError extends Error {}
 export class AutoCaptureLockedError extends Error {}
 export class DuplicateSpeciesLimitError extends Error {}
+export class LeagueInProgressError extends Error {}
 
 /** All species keys, used to deterministically build a League trainer roster for a rank. */
 export const ALL_SPECIES_KEYS = Object.keys(SPECIES_CATALOG);
@@ -635,6 +636,9 @@ export async function fleeEncounter(prisma: PrismaClient, userId: string): Promi
  * one" could never handle. */
 export async function healTeam(prisma: PrismaClient, userId: string) {
   await prisma.$transaction(async (tx) => {
+    const encounter = await tx.wildEncounter.findUnique({ where: { userId } });
+    if (encounter?.isLeagueBattle) throw new LeagueInProgressError();
+
     const team = await tx.playerCreature.findMany({ where: { userId, isOnTeam: true } });
     for (const member of team) {
       const species = SPECIES_CATALOG[member.speciesKey];
