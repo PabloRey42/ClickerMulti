@@ -20,7 +20,7 @@ model User {
   wildEncounter   WildEncounter?
   inventoryItems  PlayerInventoryItem[]
   leagueProgress  PlayerLeagueProgress?
-  specializations PlayerSpecialization[]
+  skillBranches   PlayerSkillBranch[]
   marketListings  MarketListing[]
   questProgress   PlayerQuestProgress[]
 }
@@ -42,6 +42,9 @@ model PlayerState {
   /// Admin-only testing toggle: forces every new wild encounter (and, at the moment it's
   /// switched on, every creature the player already owns) to be shiny.
   forceShinyMode  Boolean  @default(false)
+  /// Permanent reward for fully completing the League skill tree: doubles shiny odds on
+  /// every future wild encounter roll (see SHINY_CHANCE in game/constants.ts).
+  hasShinyCharm   Boolean  @default(false)
   updatedAt       DateTime @updatedAt
 }
 
@@ -105,15 +108,17 @@ model PlayerLeagueProgress {
   updatedAt     DateTime @updatedAt
 }
 
-/// Points invested per elemental type, boosting damage for matching-type creatures.
-model PlayerSpecialization {
-  id             String @id @default(cuid())
-  userId         String
-  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  elementalType  String
-  pointsInvested Int    @default(0)
+/// Tiers unlocked per League skill-tree branch (attack/defense/capture/gold/xp — see
+/// SkillBranchId in game/skillTree.ts), 0-4 each. Fully maxing every branch (20 points
+/// total) grants the player PlayerState.hasShinyCharm.
+model PlayerSkillBranch {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch String
+  tier   Int    @default(0)
 
-  @@unique([userId, elementalType])
+  @@unique([userId, branch])
   @@index([userId])
 }
 

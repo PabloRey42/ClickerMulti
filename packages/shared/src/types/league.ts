@@ -1,3 +1,5 @@
+import type { SkillBranchId } from "../game/skillTree.js";
+
 export interface LeagueOpponentPreview {
   speciesKey: string;
   name: string;
@@ -8,7 +10,8 @@ export interface LeagueOpponentPreview {
 export interface LeagueStateResponse {
   rank: number;
   unspentPoints: number;
-  specialization: Record<string, number>;
+  skillTree: Record<SkillBranchId, number>;
+  hasShinyCharm: boolean;
   opponentPreview: LeagueOpponentPreview[];
   inProgress: boolean;
 }

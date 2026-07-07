@@ -1,10 +1,14 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import {
   SPECIES_CATALOG,
-  ELEMENTAL_TYPES,
+  SKILL_TREE_BRANCH_IDS,
+  SKILL_TREE_TIERS_PER_BRANCH,
+  isValidSkillBranch,
+  isSkillTreeComplete,
   buildLeagueRoster,
   creatureMaxHp,
   type LeagueStateResponse,
+  type SkillBranchId,
   type ExplorationStateResponse,
 } from "@farm-clicker/shared";
 import { lockPlayerState } from "../../lib/battle-db.js";
@@ -15,16 +19,29 @@ import {
   ActiveCreatureFaintedError,
 } from "../exploration/exploration.service.js";
 
-export class InvalidSpecializationTypeError extends Error {}
-export class NoSpecializationPointsError extends Error {}
+export class InvalidSkillBranchError extends Error {}
+export class SkillBranchMaxedError extends Error {}
+export class NoSkillPointsError extends Error {}
+
+async function loadSkillTreeTiers(
+  prisma: PrismaClient | Prisma.TransactionClient,
+  userId: string,
+): Promise<Record<SkillBranchId, number>> {
+  const rows = await prisma.playerSkillBranch.findMany({ where: { userId } });
+  const tiers = Object.fromEntries(SKILL_TREE_BRANCH_IDS.map((b) => [b, 0])) as Record<SkillBranchId, number>;
+  for (const row of rows) {
+    if (isValidSkillBranch(row.branch)) tiers[row.branch] = row.tier;
+  }
+  return tiers;
+}
 
 export async function getLeagueState(prisma: PrismaClient, userId: string): Promise<LeagueStateResponse> {
   const progress = await prisma.playerLeagueProgress.findUnique({ where: { userId } });
   const rank = progress?.rank ?? 0;
   const unspentPoints = progress?.unspentPoints ?? 0;
 
-  const specs = await prisma.playerSpecialization.findMany({ where: { userId } });
-  const specialization = Object.fromEntries(specs.map((s) => [s.elementalType, s.pointsInvested]));
+  const skillTree = await loadSkillTreeTiers(prisma, userId);
+  const playerState = await prisma.playerState.findUnique({ where: { userId } });
 
   const roster = buildLeagueRoster(rank, ALL_SPECIES_KEYS);
   const opponentPreview = roster.map((o) => {
@@ -35,7 +52,14 @@ export async function getLeagueState(prisma: PrismaClient, userId: string): Prom
   const encounter = await prisma.wildEncounter.findUnique({ where: { userId } });
   const inProgress = encounter?.isLeagueBattle ?? false;
 
-  return { rank, unspentPoints, specialization, opponentPreview, inProgress };
+  return {
+    rank,
+    unspentPoints,
+    skillTree,
+    hasShinyCharm: playerState?.hasShinyCharm ?? false,
+    opponentPreview,
+    inProgress,
+  };
 }
 
 export async function challengeLeague(prisma: PrismaClient, userId: string): Promise<ExplorationStateResponse> {
@@ -74,24 +98,40 @@ export async function challengeLeague(prisma: PrismaClient, userId: string): Pro
   return buildExplorationState(prisma, userId);
 }
 
-export async function investSpecializationPoint(
+/** Spends one League skill point unlocking the next tier of a branch (attack/defense/
+ * capture/gold/xp). Branches unlock strictly in order (tier N+1 requires tier N already
+ * owned) and cap at SKILL_TREE_TIERS_PER_BRANCH. Once every branch is maxed, the player
+ * permanently earns the Charme Shiny (PlayerState.hasShinyCharm) — checked fresh on every
+ * investment rather than only the "last" one, so it stays correct even if branches are
+ * finished in an unexpected order. */
+export async function investSkillNode(
   prisma: PrismaClient,
   userId: string,
-  elementalType: string,
+  branch: string,
 ): Promise<LeagueStateResponse> {
-  if (!(ELEMENTAL_TYPES as string[]).includes(elementalType)) throw new InvalidSpecializationTypeError();
+  if (!isValidSkillBranch(branch)) throw new InvalidSkillBranchError();
 
   await prisma.$transaction(async (tx) => {
     const progress = await tx.playerLeagueProgress.findUnique({ where: { userId } });
     const unspentPoints = progress?.unspentPoints ?? 0;
-    if (unspentPoints < 1) throw new NoSpecializationPointsError();
+    if (unspentPoints < 1) throw new NoSkillPointsError();
+
+    const row = await tx.playerSkillBranch.findUnique({ where: { userId_branch: { userId, branch } } });
+    const currentTier = row?.tier ?? 0;
+    if (currentTier >= SKILL_TREE_TIERS_PER_BRANCH) throw new SkillBranchMaxedError();
 
     await tx.playerLeagueProgress.update({ where: { userId }, data: { unspentPoints: { decrement: 1 } } });
-    await tx.playerSpecialization.upsert({
-      where: { userId_elementalType: { userId, elementalType } },
-      update: { pointsInvested: { increment: 1 } },
-      create: { userId, elementalType, pointsInvested: 1 },
+    await tx.playerSkillBranch.upsert({
+      where: { userId_branch: { userId, branch } },
+      update: { tier: { increment: 1 } },
+      create: { userId, branch, tier: 1 },
     });
+
+    const tiers = await loadSkillTreeTiers(tx, userId);
+    tiers[branch] = currentTier + 1;
+    if (isSkillTreeComplete(tiers)) {
+      await tx.playerState.update({ where: { userId }, data: { hasShinyCharm: true } });
+    }
   });
 
   return getLeagueState(prisma, userId);

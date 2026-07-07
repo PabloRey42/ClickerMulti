@@ -25,6 +25,14 @@ export function setAdminForceShiny(accessToken: string, userId: string, enabled:
   });
 }
 
+export function setAdminShinyCharm(accessToken: string, userId: string, enabled: boolean) {
+  return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/shiny-charm`, {
+    method: "PATCH",
+    accessToken,
+    body: { enabled },
+  });
+}
+
 export function setAdminUserPassword(accessToken: string, userId: string, password: string) {
   return apiRequest<AdminUserDetail>(`/api/admin/users/${userId}/password`, {
     method: "PATCH",

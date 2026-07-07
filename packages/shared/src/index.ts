@@ -13,6 +13,7 @@ export * from "./game/potions.js";
 export * from "./game/bignum.js";
 export * from "./game/constants.js";
 export * from "./game/league.js";
+export * from "./game/skillTree.js";
 export * from "./game/quests.js";
 export * from "./world/types.js";
 export * from "./world/species.js";

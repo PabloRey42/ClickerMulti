@@ -1,5 +1,5 @@
-import type { ElementalType } from "../world/species.js";
 import type { PlayerCreatureView } from "./creature.js";
+import type { SkillBranchId } from "../game/skillTree.js";
 
 export interface AdminUserSummary {
   id: string;
@@ -16,9 +16,9 @@ export interface AdminInventoryItemView {
   quantity: number;
 }
 
-export interface AdminSpecializationView {
-  elementalType: ElementalType;
-  pointsInvested: number;
+export interface AdminSkillBranchView {
+  branch: SkillBranchId;
+  tier: number;
 }
 
 export interface AdminUserDetail {
@@ -29,11 +29,12 @@ export interface AdminUserDetail {
   goldBalance: bigint;
   autoHealEnabled: boolean;
   forceShinyMode: boolean;
+  hasShinyCharm: boolean;
   leagueRank: number;
   unspentPoints: number;
   creatures: PlayerCreatureView[];
   inventoryItems: AdminInventoryItemView[];
-  specializations: AdminSpecializationView[];
+  skillTree: AdminSkillBranchView[];
 }
 
 export interface AdminUserListResponse {

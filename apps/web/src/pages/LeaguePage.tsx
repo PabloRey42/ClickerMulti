@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import type { LeagueStateResponse, ElementalType } from "@farm-clicker/shared";
-import { ELEMENTAL_TYPES } from "@farm-clicker/shared";
+import type { LeagueStateResponse, SkillBranchId } from "@farm-clicker/shared";
+import { SKILL_TREE_BRANCHES, SKILL_TREE_TIERS_PER_BRANCH } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useExplorationStore } from "../state/explorationStore";
 import { useBattleStore } from "../state/battleStore";
-import { getLeagueState, challengeLeague, investSpecializationPoint } from "../api/league";
+import { getLeagueState, challengeLeague, investSkillNode } from "../api/league";
 import { ApiError } from "../api/client";
-import { TYPE_LABEL } from "../theme/typeColors";
 
 export function LeaguePage() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -55,12 +54,12 @@ export function LeaguePage() {
     }
   }
 
-  async function handleSpecialize(elementalType: ElementalType) {
+  async function handleInvest(branch: SkillBranchId) {
     if (!accessToken || busy) return;
     setBusy(true);
     setError(null);
     try {
-      setLeague(await investSpecializationPoint(accessToken, elementalType));
+      setLeague(await investSkillNode(accessToken, branch));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -97,7 +96,7 @@ export function LeaguePage() {
         </div>
         <div className="flex flex-1 flex-col items-center gap-0.5 rounded-xl border-2 border-gold-deep bg-panel px-4 py-2.5">
           <span className="text-[10px] font-bold uppercase tracking-wide text-panel-foreground/60">
-            Points de spécialisation
+            Points de compétence
           </span>
           <span className="text-lg font-black text-gold-light">{league.unspentPoints}</span>
         </div>
@@ -134,27 +133,108 @@ export function LeaguePage() {
         </button>
       </div>
 
-      <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-gold-light">Spécialisation</h2>
-      <ul className="flex flex-col gap-2">
-        {ELEMENTAL_TYPES.map((type) => (
-          <li key={type} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel px-3 py-2">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-extrabold text-gold-light">{TYPE_LABEL[type]}</p>
-              <p className="text-xs font-semibold text-panel-foreground/60">
-                {league.specialization[type] ?? 0} point(s) investi(s)
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={busy || league.unspentPoints < 1}
-              onClick={() => handleSpecialize(type)}
-              className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-xs font-black uppercase text-panel disabled:opacity-50"
-            >
-              Investir
-            </button>
-          </li>
-        ))}
-      </ul>
+      <SkillTreePanel league={league} busy={busy} onInvest={handleInvest} />
     </section>
+  );
+}
+
+function SkillTreePanel({
+  league,
+  busy,
+  onInvest,
+}: {
+  league: LeagueStateResponse;
+  busy: boolean;
+  onInvest: (branch: SkillBranchId) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-gold-light">
+          <img src="/ui/skill-tree-icon.png" alt="" className="h-6 w-6 [image-rendering:pixelated]" />
+          Arbre de compétence
+        </h2>
+        {league.hasShinyCharm && (
+          <span className="rounded-full border-2 border-amber-300 bg-amber-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.6)]">
+            ✨ Charme Shiny obtenu
+          </span>
+        )}
+      </div>
+
+      <div
+        className="relative overflow-hidden rounded-2xl border-2 border-indigo-400/40 p-4 shadow-[inset_0_0_40px_rgba(0,0,0,0.6)]"
+        style={{
+          background:
+            "radial-gradient(circle at 15% 20%, rgba(255,255,255,0.9) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 75% 10%, rgba(255,255,255,0.7) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 40% 65%, rgba(255,255,255,0.8) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 85% 55%, rgba(255,255,255,0.6) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 60% 85%, rgba(255,255,255,0.9) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 25% 90%, rgba(255,255,255,0.5) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 92% 25%, rgba(255,255,255,0.7) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 8% 55%, rgba(255,255,255,0.6) 0 1px, transparent 1px)," +
+            "radial-gradient(circle at 50% 15%, rgba(255,255,255,0.5) 0 1px, transparent 1px)," +
+            "linear-gradient(180deg, #0a0f2c 0%, #171238 55%, #21123f 100%)",
+          backgroundSize: "100% 100%",
+        }}
+      >
+        {/* Charme Shiny reward node, above the branches */}
+        <div className="mb-4 flex justify-center">
+          <div
+            className={[
+              "flex flex-col items-center gap-1 rounded-2xl border-2 px-4 py-2 text-center transition-all",
+              league.hasShinyCharm
+                ? "border-amber-300 bg-amber-300/15 shadow-[0_0_20px_rgba(252,211,77,0.7)]"
+                : "border-indigo-300/30 bg-indigo-950/40",
+            ].join(" ")}
+          >
+            <span className="text-2xl">✨</span>
+            <span className={`text-[10px] font-black uppercase tracking-wide ${league.hasShinyCharm ? "text-amber-200" : "text-indigo-200/60"}`}>
+              Charme Shiny
+            </span>
+            <span className="text-[9px] font-semibold text-indigo-200/50">x2 chances de shiny</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2 sm:gap-4">
+          {SKILL_TREE_BRANCHES.map((branch) => {
+            const tier = league.skillTree[branch.id] ?? 0;
+            return (
+              <div key={branch.id} className="flex flex-col items-center gap-2">
+                <span className="text-lg sm:text-xl">{branch.icon}</span>
+                <span className="text-center text-[9px] font-black uppercase tracking-wide text-indigo-100 sm:text-[10px]">
+                  {branch.label}
+                </span>
+                <div className="flex flex-col-reverse items-center gap-1.5">
+                  {Array.from({ length: SKILL_TREE_TIERS_PER_BRANCH }, (_, i) => i + 1).map((nodeTier) => {
+                    const owned = nodeTier <= tier;
+                    const unlockable = nodeTier === tier + 1 && league.unspentPoints > 0;
+                    return (
+                      <button
+                        key={nodeTier}
+                        type="button"
+                        disabled={busy || !unlockable}
+                        onClick={() => onInvest(branch.id)}
+                        title={branch.description}
+                        className={[
+                          "flex h-7 w-7 items-center justify-center rounded-full border-2 text-[10px] font-black transition-all sm:h-8 sm:w-8",
+                          owned
+                            ? "border-amber-300 bg-amber-300/80 text-indigo-950 shadow-[0_0_10px_rgba(252,211,77,0.7)]"
+                            : unlockable
+                              ? "border-indigo-200 bg-indigo-500/40 text-indigo-50 hover:bg-indigo-400/60"
+                              : "border-indigo-300/20 bg-indigo-950/60 text-indigo-300/30",
+                        ].join(" ")}
+                      >
+                        {nodeTier}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

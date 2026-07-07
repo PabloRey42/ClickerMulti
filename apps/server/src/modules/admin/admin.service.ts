@@ -48,7 +48,7 @@ export async function getUserDetail(prisma: PrismaClient, userId: string): Promi
       playerCreatures: { orderBy: { caughtAt: "asc" } },
       inventoryItems: true,
       leagueProgress: true,
-      specializations: true,
+      skillBranches: true,
     },
   });
   if (!user || !user.playerState) throw new UserNotFoundError();
@@ -61,13 +61,14 @@ export async function getUserDetail(prisma: PrismaClient, userId: string): Promi
     goldBalance: user.playerState.goldBalance,
     autoHealEnabled: user.playerState.autoHealEnabled,
     forceShinyMode: user.playerState.forceShinyMode,
+    hasShinyCharm: user.playerState.hasShinyCharm,
     leagueRank: user.leagueProgress?.rank ?? 0,
     unspentPoints: user.leagueProgress?.unspentPoints ?? 0,
     creatures: user.playerCreatures.map(buildCreatureView),
     inventoryItems: user.inventoryItems.map((i) => ({ itemKey: i.itemKey, quantity: i.quantity })),
-    specializations: user.specializations.map((s) => ({
-      elementalType: s.elementalType as AdminUserDetail["specializations"][number]["elementalType"],
-      pointsInvested: s.pointsInvested,
+    skillTree: user.skillBranches.map((s) => ({
+      branch: s.branch as AdminUserDetail["skillTree"][number]["branch"],
+      tier: s.tier,
     })),
   };
 }
@@ -93,6 +94,18 @@ export async function setForceShinyMode(
 ): Promise<AdminUserDetail> {
   await assertUserExists(prisma, userId);
   await prisma.playerState.update({ where: { userId }, data: { forceShinyMode: enabled } });
+  return getUserDetail(prisma, userId);
+}
+
+/** Testing toggle: grants/revokes the Charme Shiny reward directly, without requiring the
+ * player to actually max out all 5 League skill-tree branches (20 points). */
+export async function setShinyCharm(
+  prisma: PrismaClient,
+  userId: string,
+  enabled: boolean,
+): Promise<AdminUserDetail> {
+  await assertUserExists(prisma, userId);
+  await prisma.playerState.update({ where: { userId }, data: { hasShinyCharm: enabled } });
   return getUserDetail(prisma, userId);
 }
 

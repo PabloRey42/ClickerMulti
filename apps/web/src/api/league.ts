@@ -9,10 +9,10 @@ export function challengeLeague(accessToken: string) {
   return apiRequest<ExplorationStateResponse>("/api/league/challenge", { method: "POST", accessToken });
 }
 
-export function investSpecializationPoint(accessToken: string, elementalType: string) {
-  return apiRequest<LeagueStateResponse>("/api/league/specialize", {
+export function investSkillNode(accessToken: string, branch: string) {
+  return apiRequest<LeagueStateResponse>("/api/league/skill-tree/invest", {
     method: "POST",
     accessToken,
-    body: { elementalType },
+    body: { branch },
   });
 }

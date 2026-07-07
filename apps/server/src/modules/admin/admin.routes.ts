@@ -9,6 +9,7 @@ import {
   setGold,
   setPassword,
   setForceShinyMode,
+  setShinyCharm,
   giveCreature,
   setCreatureShiny,
   deleteCreature,
@@ -26,6 +27,7 @@ const itemParamsSchema = z.object({ userId: z.string().min(1), itemKey: z.string
 
 const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
 const forceShinyBodySchema = z.object({ enabled: z.boolean() });
+const shinyCharmBodySchema = z.object({ enabled: z.boolean() });
 const passwordBodySchema = z.object({ password: z.string().min(8).max(100) });
 const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(MAX_LEVEL) });
 const creatureShinyBodySchema = z.object({ isShiny: z.boolean() });
@@ -71,6 +73,19 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
     try {
       sendJson(reply, await setForceShinyMode(fastify.prisma, params.data.userId, body.data.enabled));
+    } catch (err) {
+      if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/users/:userId/shiny-charm", async (request, reply) => {
+    const params = userParamsSchema.safeParse(request.params);
+    const body = shinyCharmBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      sendJson(reply, await setShinyCharm(fastify.prisma, params.data.userId, body.data.enabled));
     } catch (err) {
       if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
       throw err;

@@ -5,7 +5,6 @@ import {
   POKEBALL_CATALOG,
   POTION_CATALOG,
   MAX_TEAM_SIZE,
-  SPECIALIZATION_POINTS_PER_CLEAR,
   nextComboStacks,
   comboMultiplier,
   typeMultiplier,
@@ -17,11 +16,13 @@ import {
   xpReward,
   buildLeagueRoster,
   leagueRankBonusMultiplier,
-  specializationBonusMultiplier,
+  computeSkillTreeBonuses,
+  LEAGUE_SKILL_POINTS_PER_CLEAR,
   findEncounterHotspot,
   MAX_SAME_SPECIES_OWNED,
   MAX_SHINY_SAME_SPECIES_OWNED,
   SHINY_CHANCE,
+  type SkillTreeBonuses,
   type EncounterTableEntry,
   type RouteHotspot,
   type DungeonHotspot,
@@ -65,12 +66,17 @@ function pickWeightedEntry(entries: EncounterTableEntry[], roll: number): Encoun
   return entries[entries.length - 1];
 }
 
-function rollEncounterData(hotspot: RouteHotspot | DungeonHotspot, routeKey: string, forceShiny: boolean) {
+function rollEncounterData(
+  hotspot: RouteHotspot | DungeonHotspot,
+  routeKey: string,
+  forceShiny: boolean,
+  shinyChanceMultiplier: number,
+) {
   const entry = pickWeightedEntry(hotspot.encounterTable, Math.random());
   const level = entry.minLevel + Math.floor(Math.random() * (entry.maxLevel - entry.minLevel + 1));
   const species = SPECIES_CATALOG[entry.speciesKey];
   const maxHp = creatureMaxHp(species.baseHp, level);
-  const isShiny = forceShiny || Math.random() < SHINY_CHANCE;
+  const isShiny = forceShiny || Math.random() < SHINY_CHANCE * shinyChanceMultiplier;
   return { routeKey, speciesKey: entry.speciesKey, level, currentHp: maxHp, maxHp, isShiny };
 }
 
@@ -82,13 +88,40 @@ async function rerollOrClearEncounter(
   userId: string,
   routeKey: string,
   forceShiny: boolean,
+  shinyChanceMultiplier: number,
 ): Promise<void> {
   const hotspot = findEncounterHotspot(routeKey);
   if (hotspot && hotspot.encounterTable.length > 0) {
-    await tx.wildEncounter.update({ where: { userId }, data: rollEncounterData(hotspot, routeKey, forceShiny) });
+    await tx.wildEncounter.update({
+      where: { userId },
+      data: rollEncounterData(hotspot, routeKey, forceShiny, shinyChanceMultiplier),
+    });
   } else {
     await tx.wildEncounter.delete({ where: { userId } });
   }
+}
+
+/** The Charme Shiny (League skill-tree completion reward) doubles shiny odds on every
+ * future wild encounter roll. */
+function shinyChanceMultiplierFor(state: { hasShinyCharm: boolean }): number {
+  return state.hasShinyCharm ? 2 : 1;
+}
+
+/** Fetches the player's League skill-tree tiers and turns them into ready-to-use combat/
+ * reward multipliers — computed once per transaction and threaded down to every place a
+ * bonus applies, rather than re-querying PlayerSkillBranch at each call site. */
+async function getSkillTreeBonuses(tx: Prisma.TransactionClient, userId: string): Promise<SkillTreeBonuses> {
+  const rows = await tx.playerSkillBranch.findMany({ where: { userId } });
+  const tiers = Object.fromEntries(rows.map((r) => [r.branch, r.tier]));
+  return computeSkillTreeBonuses(tiers);
+}
+
+function scaledGoldReward(level: number, bonuses: SkillTreeBonuses): bigint {
+  return BigInt(Math.round(Number(goldReward(level)) * bonuses.gold));
+}
+
+function scaledXpReward(level: number, bonuses: SkillTreeBonuses): number {
+  return Math.round(xpReward(level) * bonuses.xp);
 }
 
 export async function buildExplorationState(
@@ -180,9 +213,10 @@ async function grantEncounterRewards(
   tx: Prisma.TransactionClient,
   userId: string,
   level: number,
+  bonuses: SkillTreeBonuses,
 ): Promise<{ goldGained: bigint; xpGained: number; leveledUp: boolean }> {
-  const goldGained = goldReward(level);
-  const xpGained = xpReward(level);
+  const goldGained = scaledGoldReward(level, bonuses);
+  const xpGained = scaledXpReward(level, bonuses);
   let leveledUp = false;
 
   const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
@@ -203,6 +237,7 @@ async function autoCaptureIfEnabled(
   userId: string,
   encounter: { speciesKey: string; level: number; isShiny: boolean },
   wildSpecies: SpeciesConfig,
+  bonuses: SkillTreeBonuses,
 ): Promise<{ attempted: boolean; captured: boolean }> {
   const playerState = await tx.playerState.findUnique({ where: { userId } });
   if (!playerState?.autoCaptureEnabled) return { attempted: false, captured: false };
@@ -228,7 +263,12 @@ async function autoCaptureIfEnabled(
     while (owned > 0) {
       owned -= 1;
       anyBallThrown = true;
-      const success = rollCapture(Math.random(), wildSpecies.baseCaptureRate, ball.catchMultiplier, 0);
+      const success = rollCapture(
+        Math.random(),
+        wildSpecies.baseCaptureRate,
+        ball.catchMultiplier * bonuses.capture,
+        0,
+      );
 
       if (success) {
         await tx.playerInventoryItem.update({
@@ -246,8 +286,8 @@ async function autoCaptureIfEnabled(
             isShiny: encounter.isShiny,
           },
         });
-        const goldGained = goldReward(encounter.level) / 2n;
-        const xpGained = Math.floor(xpReward(encounter.level) / 2);
+        const goldGained = scaledGoldReward(encounter.level, bonuses) / 2n;
+        const xpGained = Math.floor(scaledXpReward(encounter.level, bonuses) / 2);
         const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
         if (activeCreature) await applyXpGain(tx, activeCreature, xpGained);
         await tx.playerState.update({ where: { userId }, data: { goldBalance: { increment: goldGained } } });
@@ -294,7 +334,12 @@ export async function enterRoute(
     if (!activeCreature) throw new NoActiveCreatureError();
     if (activeCreature.currentHp <= 0) throw new ActiveCreatureFaintedError();
 
-    const rolled = rollEncounterData(hotspot, routeKey, lockedState.forceShinyMode);
+    const rolled = rollEncounterData(
+      hotspot,
+      routeKey,
+      lockedState.forceShinyMode,
+      shinyChanceMultiplierFor(lockedState),
+    );
     await tx.wildEncounter.upsert({
       where: { userId },
       update: rolled,
@@ -307,7 +352,8 @@ export async function enterRoute(
 }
 
 /** Advances a League run: either lines up the next trainer opponent, or — if the whole
- * roster is cleared — bumps rank (never resets) and grants specialization points. */
+ * roster is cleared — bumps rank (never resets) and grants a League skill point to spend
+ * on the skill tree. */
 async function resolveLeagueVictory(
   tx: Prisma.TransactionClient,
   userId: string,
@@ -321,8 +367,8 @@ async function resolveLeagueVictory(
   if (nextIndex >= roster.length) {
     await tx.playerLeagueProgress.upsert({
       where: { userId },
-      update: { rank: rank + 1, unspentPoints: { increment: SPECIALIZATION_POINTS_PER_CLEAR } },
-      create: { userId, rank: rank + 1, unspentPoints: SPECIALIZATION_POINTS_PER_CLEAR },
+      update: { rank: rank + 1, unspentPoints: { increment: LEAGUE_SKILL_POINTS_PER_CLEAR } },
+      create: { userId, rank: rank + 1, unspentPoints: LEAGUE_SKILL_POINTS_PER_CLEAR },
     });
     await tx.wildEncounter.delete({ where: { userId } });
     return { cleared: true };
@@ -360,18 +406,12 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     const playerSpecies = SPECIES_CATALOG[activeCreature.speciesKey];
     const wildSpecies = SPECIES_CATALOG[encounter.speciesKey];
 
-    // Permanent bonuses: League rank boosts every attack; specialization boosts attacks
-    // from creatures whose type matches an invested type (dual-typed creatures get the
-    // best of either match). Both apply everywhere, not just in League fights, so
-    // clearing the League actually makes the player stronger.
+    // Permanent bonuses: League rank boosts every attack; the skill-tree "Attaque" branch
+    // adds a further flat bonus on top. Both apply everywhere, not just in League fights,
+    // so clearing the League/tree actually makes the player stronger everywhere.
     const progress = await tx.playerLeagueProgress.findUnique({ where: { userId } });
-    const specializations = await tx.playerSpecialization.findMany({
-      where: { userId, elementalType: { in: playerSpecies.types } },
-    });
-    const bestSpecializationPoints = specializations.reduce((max, s) => Math.max(max, s.pointsInvested), 0);
-    const bonusMultiplier = leagueRankBonusMultiplier(progress?.rank ?? 0).mul(
-      specializationBonusMultiplier(bestSpecializationPoints),
-    );
+    const skillBonuses = await getSkillTreeBonuses(tx, userId);
+    const bonusMultiplier = leagueRankBonusMultiplier(progress?.rank ?? 0).mul(skillBonuses.attack);
 
     const playerAttack = creatureAttack(playerSpecies.baseAttack, activeCreature.level);
     damageDealt = computeAttackDamage(
@@ -391,16 +431,28 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
         leagueCleared = result.cleared;
       } else {
         await bumpQuestObjective(tx, userId, "win_battle_on_route", 1, { routeKey: encounter.routeKey });
-        const autoCapture = await autoCaptureIfEnabled(tx, userId, encounter, wildSpecies);
+        const autoCapture = await autoCaptureIfEnabled(tx, userId, encounter, wildSpecies, skillBonuses);
         if (autoCapture.captured) {
           await autoHealIfEnabled(tx, userId);
-          await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
+          await rerollOrClearEncounter(
+            tx,
+            userId,
+            encounter.routeKey,
+            lockedState.forceShinyMode,
+            shinyChanceMultiplierFor(lockedState),
+          );
         } else if (autoCapture.attempted) {
           // Auto-capture was on but never landed (or ran out of balls) — still auto-finish
           // so a fully AFK player isn't left stuck waiting on a defeated encounter forever.
-          await grantEncounterRewards(tx, userId, encounter.level);
+          await grantEncounterRewards(tx, userId, encounter.level, skillBonuses);
           await autoHealIfEnabled(tx, userId);
-          await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
+          await rerollOrClearEncounter(
+            tx,
+            userId,
+            encounter.routeKey,
+            lockedState.forceShinyMode,
+            shinyChanceMultiplierFor(lockedState),
+          );
         } else {
           await tx.wildEncounter.update({ where: { userId }, data: { currentHp: 0 } });
         }
@@ -408,10 +460,11 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
       return;
     }
 
+    // The skill-tree "Vitalité" branch reduces damage taken from every wild counter-attack.
     const wildAttack = creatureAttack(wildSpecies.baseAttack, encounter.level);
     damageTaken = computeAttackDamage(
       wildAttack,
-      new Decimal(1),
+      skillBonuses.defense,
       typeMultiplier(wildSpecies.types, playerSpecies.types),
     );
     const playerHpAfter = Math.max(0, activeCreature.currentHp - damageTaken);
@@ -484,8 +537,9 @@ export async function captureEncounter(
       data: { quantity: { decrement: 1 } },
     });
 
+    const skillBonuses = await getSkillTreeBonuses(tx, userId);
     const species = SPECIES_CATALOG[encounter.speciesKey];
-    success = rollCapture(Math.random(), species.baseCaptureRate, pokeball.catchMultiplier, 0);
+    success = rollCapture(Math.random(), species.baseCaptureRate, pokeball.catchMultiplier * skillBonuses.capture, 0);
 
     if (success) {
       const teamCount = await tx.playerCreature.count({ where: { userId, isOnTeam: true } });
@@ -501,8 +555,8 @@ export async function captureEncounter(
       });
       createdCreatureId = created.id;
 
-      const goldGained = goldReward(encounter.level) / 2n;
-      xpGained = Math.floor(xpReward(encounter.level) / 2);
+      const goldGained = scaledGoldReward(encounter.level, skillBonuses) / 2n;
+      xpGained = Math.floor(scaledXpReward(encounter.level, skillBonuses) / 2);
       const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
       if (activeCreature) {
         const xpResult = await applyXpGain(tx, activeCreature, xpGained);
@@ -512,7 +566,13 @@ export async function captureEncounter(
       await bumpQuestObjective(tx, userId, "capture_creature");
 
       await autoHealIfEnabled(tx, userId);
-      await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
+      await rerollOrClearEncounter(
+        tx,
+        userId,
+        encounter.routeKey,
+        lockedState.forceShinyMode,
+        shinyChanceMultiplierFor(lockedState),
+      );
     }
   });
 
@@ -534,10 +594,17 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
     if (!encounter) throw new NoEncounterError();
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
 
-    ({ goldGained, xpGained, leveledUp } = await grantEncounterRewards(tx, userId, encounter.level));
+    const skillBonuses = await getSkillTreeBonuses(tx, userId);
+    ({ goldGained, xpGained, leveledUp } = await grantEncounterRewards(tx, userId, encounter.level, skillBonuses));
 
     await autoHealIfEnabled(tx, userId);
-    await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
+    await rerollOrClearEncounter(
+      tx,
+      userId,
+      encounter.routeKey,
+      lockedState.forceShinyMode,
+      shinyChanceMultiplierFor(lockedState),
+    );
   });
 
   const state = await buildExplorationState(prisma, userId);
@@ -550,7 +617,13 @@ export async function fleeEncounter(prisma: PrismaClient, userId: string): Promi
     const encounter = await lockWildEncounter(tx, userId);
     if (!encounter) throw new NoEncounterError();
     await autoHealIfEnabled(tx, userId);
-    await rerollOrClearEncounter(tx, userId, encounter.routeKey, lockedState.forceShinyMode);
+    await rerollOrClearEncounter(
+      tx,
+      userId,
+      encounter.routeKey,
+      lockedState.forceShinyMode,
+      shinyChanceMultiplierFor(lockedState),
+    );
   });
 
   return buildExplorationState(prisma, userId);

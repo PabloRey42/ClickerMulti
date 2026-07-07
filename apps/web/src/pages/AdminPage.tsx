@@ -15,6 +15,7 @@ import {
   setAdminUserGold,
   setAdminUserPassword,
   setAdminForceShiny,
+  setAdminShinyCharm,
   giveAdminCreature,
   setAdminCreatureShiny,
   deleteAdminCreature,
@@ -146,6 +147,11 @@ export function AdminPage() {
     handleAction(() => setAdminForceShiny(accessToken!, selectedId, !detail.forceShinyMode));
   }
 
+  function handleToggleShinyCharm() {
+    if (!selectedId || !detail) return;
+    handleAction(() => setAdminShinyCharm(accessToken!, selectedId, !detail.hasShinyCharm));
+  }
+
   function handleDeleteUser() {
     if (!selectedId || !detail) return;
     if (!window.confirm(`Supprimer définitivement le compte "${detail.username}" et toutes ses données ?`)) return;
@@ -241,6 +247,20 @@ export function AdminPage() {
                   {detail.forceShinyMode
                     ? "Tous les prochains Pokémon sauvages rencontrés seront shiny (les Pokémon déjà possédés ne sont pas modifiés)."
                     : "Force tous les prochains Pokémon sauvages rencontrés à être shiny, sans toucher aux Pokémon déjà possédés."}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleToggleShinyCharm}
+                  className={detail.hasShinyCharm ? buttonClass : `${buttonClass} opacity-70`}
+                >
+                  {detail.hasShinyCharm ? "Charme Shiny accordé" : "Accorder le Charme Shiny"}
+                </button>
+                <span className="text-[10px] font-semibold text-panel-foreground/60">
+                  Récompense normalement obtenue en complétant l'arbre de compétences de la Ligue — double les
+                  chances de shiny.
                 </span>
               </div>
             </div>
