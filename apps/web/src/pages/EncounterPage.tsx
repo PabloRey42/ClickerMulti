@@ -16,6 +16,7 @@ import { getShopCatalog } from "../api/shop";
 import { useTeamStore } from "../state/teamStore";
 import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
 import { playShinySound } from "../theme/shinySound";
+import { LeagueVictoryModal } from "../components/LeagueVictoryModal";
 
 /** Fixed radiating offsets for the one-shot star burst — a real Pokémon shiny sparkle is a
  * consistent pattern, not randomized, so there's no need for Math.random() here. */
@@ -121,6 +122,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   const [message, setMessage] = useState<string | null>(null);
   const [levelUpKey, setLevelUpKey] = useState(0);
   const [justLeveledUp, setJustLeveledUp] = useState(false);
+  const [showLeagueVictory, setShowLeagueVictory] = useState(false);
 
   useEffect(() => {
     if (!accessToken || state) return;
@@ -170,7 +172,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       const result = await attackEncounter(accessToken);
       applyAttack(result.state, result.damageDealt, result.damageTaken);
       if (result.leagueCleared) {
-        setMessage("🏆 Ligue remportée ! Rang supérieur débloqué, points de spécialisation gagnés.");
+        setShowLeagueVictory(true);
       } else if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
       }
@@ -258,6 +260,11 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   function handleLeave() {
     clear();
     onLeave();
+  }
+
+  function handleCloseLeagueVictory() {
+    setShowLeagueVictory(false);
+    handleLeave();
   }
 
   const encounter = state?.encounter ?? null;
@@ -441,6 +448,8 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
           )}
         </div>
       </div>
+
+      {showLeagueVictory && <LeagueVictoryModal onClose={handleCloseLeagueVictory} />}
     </div>
   );
 }

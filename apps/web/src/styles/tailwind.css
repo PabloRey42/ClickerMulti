@@ -153,3 +153,47 @@ body {
     filter: brightness(1) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
   }
 }
+
+/* League-clear celebration: falling confetti pieces + a bouncy pop-in panel. */
+.confetti-piece {
+  position: absolute;
+  top: -5%;
+  width: 9px;
+  height: 14px;
+  opacity: 0;
+  animation-name: confetti-fall;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh) rotate(var(--confetti-rotate));
+  }
+}
+
+.league-victory-pop {
+  animation: league-victory-pop-anim 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes league-victory-pop-anim {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
