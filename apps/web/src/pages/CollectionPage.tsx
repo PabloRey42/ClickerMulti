@@ -87,13 +87,15 @@ export function CollectionPage() {
   ).length;
 
   const normalizedSearch = search.trim().toLowerCase();
-  const filteredEntries = normalizedSearch
-    ? DEX_ENTRIES.filter(
-        (species) =>
-          species.name.toLowerCase().includes(normalizedSearch) ||
-          species.dexNumber.toString().includes(normalizedSearch),
-      )
-    : DEX_ENTRIES;
+  const filteredEntries = !normalizedSearch
+    ? DEX_ENTRIES
+    : normalizedSearch === "shiny"
+      ? DEX_ENTRIES.filter((species) => creatures.some((c) => c.speciesKey === species.key && c.isShiny))
+      : DEX_ENTRIES.filter(
+          (species) =>
+            species.name.toLowerCase().includes(normalizedSearch) ||
+            species.dexNumber.toString().includes(normalizedSearch),
+        );
 
   return (
     <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
@@ -109,7 +111,7 @@ export function CollectionPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un Pokémon..."
+          placeholder="Rechercher un Pokémon... (ou « shiny »)"
           className="w-full rounded-full border-2 border-gold-deep bg-panel px-4 py-2 text-xs font-semibold text-panel-foreground placeholder:text-panel-foreground/40 outline-none focus:border-gold"
         />
       </div>
