@@ -49,16 +49,12 @@ export async function getLeagueState(prisma: PrismaClient, userId: string): Prom
     return { speciesKey: o.speciesKey, name: species.name, spriteFile: species.spriteFile, level: o.level };
   });
 
-  const encounter = await prisma.wildEncounter.findUnique({ where: { userId } });
-  const inProgress = encounter?.isLeagueBattle ?? false;
-
   return {
     rank,
     unspentPoints,
     skillTree,
     hasShinyCharm: playerState?.hasShinyCharm ?? false,
     opponentPreview,
-    inProgress,
   };
 }
 
@@ -66,12 +62,9 @@ export async function challengeLeague(prisma: PrismaClient, userId: string): Pro
   await prisma.$transaction(async (tx) => {
     await lockPlayerState(tx, userId);
 
-    // Resume an already-in-progress League run rather than rerolling it. A stale *route*
-    // encounter (abandoned wild fight) must NOT block starting the League — it gets
-    // overwritten below, same as entering a different route abandons the old one.
-    const existingEncounter = await tx.wildEncounter.findUnique({ where: { userId } });
-    if (existingEncounter?.isLeagueBattle) return;
-
+    // A League run never resumes, whether it was abandoned mid-fight or fled — every
+    // challenge always restarts the roster from the first trainer, win or lose. Whatever
+    // encounter (route or League) was previously in progress just gets overwritten below.
     const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
     if (!activeCreature) throw new NoActiveCreatureError();
     if (activeCreature.currentHp <= 0) throw new ActiveCreatureFaintedError();

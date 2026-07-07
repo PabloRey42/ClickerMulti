@@ -129,7 +129,7 @@ export function LeaguePage() {
           className="flex items-center gap-2 rounded-full border-[3px] border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-6 py-3 text-sm font-black uppercase tracking-wide text-panel shadow-[0_6px_0_var(--gold-deep),0_10px_20px_rgba(0,0,0,0.5)] transition-all hover:brightness-105 active:translate-y-1 active:shadow-[0_2px_0_var(--gold-deep)] disabled:opacity-60"
         >
           <span>🏆</span>
-          <span>{league.inProgress ? "Reprendre" : "Défier"}</span>
+          <span>Défier</span>
         </button>
       </div>
 

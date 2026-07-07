@@ -257,7 +257,17 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
     }
   }
 
-  function handleLeave() {
+  // A League run never resumes (see league.service.ts's challengeLeague) — leaving mid-fight
+  // must actually flee server-side too, not just navigate away client-side, otherwise the
+  // abandoned League encounter lingers and blocks entering a normal route afterwards.
+  async function handleLeave() {
+    if (accessToken && state?.encounter?.isLeagueBattle) {
+      try {
+        await fleeEncounter(accessToken);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) return logout();
+      }
+    }
     clear();
     onLeave();
   }

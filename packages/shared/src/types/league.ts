@@ -13,5 +13,4 @@ export interface LeagueStateResponse {
   skillTree: Record<SkillBranchId, number>;
   hasShinyCharm: boolean;
   opponentPreview: LeagueOpponentPreview[];
-  inProgress: boolean;
 }
