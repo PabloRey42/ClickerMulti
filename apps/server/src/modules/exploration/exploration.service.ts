@@ -322,14 +322,14 @@ export async function enterRoute(
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
 
-    // A League battle always takes precedence, whatever route was requested — it must be
-    // finished or fled before the player can go fight somewhere else. An in-progress
-    // encounter on the SAME route (e.g. awaiting a team switch after a faint) also takes
-    // precedence, even if nobody is currently active — that's exactly the state a player
-    // needs to get back into to pick a replacement and keep fighting. An encounter left
-    // over from a *different* route, however, must not leak into the newly entered one.
+    // An in-progress encounter on the SAME route (e.g. awaiting a team switch after a
+    // faint) takes precedence, even if nobody is currently active — that's exactly the
+    // state a player needs to get back into to pick a replacement and keep fighting. Any
+    // other leftover encounter (a different route, or a stale/abandoned League run — League
+    // never resumes, see league.service.ts's challengeLeague) just gets overwritten below,
+    // same as switching between two different routes already does.
     const existingEncounter = await tx.wildEncounter.findUnique({ where: { userId } });
-    if (existingEncounter && (existingEncounter.isLeagueBattle || existingEncounter.routeKey === routeKey)) return;
+    if (existingEncounter && !existingEncounter.isLeagueBattle && existingEncounter.routeKey === routeKey) return;
 
     const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
     if (!activeCreature) throw new NoActiveCreatureError();
