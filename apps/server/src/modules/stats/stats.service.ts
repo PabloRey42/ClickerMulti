@@ -19,5 +19,6 @@ export async function getPlayerStats(prisma: PrismaClient, userId: string): Prom
     creaturesOwned,
     leagueRank: leagueProgress?.rank ?? 0,
     questsCompleted,
+    hasDynavoltEasterEgg: playerState.hasDynavoltEasterEgg,
   };
 }

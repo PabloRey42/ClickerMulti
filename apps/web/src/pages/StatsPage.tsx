@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
-import type { PlayerStatsResponse } from "@farm-clicker/shared";
+import { useEffect, useRef, useState } from "react";
+import type { PlayerStatsResponse, PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { getPlayerStats } from "../api/stats";
+import { claimDynavoltEasterEgg } from "../api/easterEgg";
 import { ApiError } from "../api/client";
+import { DynavoltUnlockModal } from "../components/DynavoltUnlockModal";
 
 const STAT_TILES: { key: keyof PlayerStatsResponse; label: string; icon: string }[] = [
   { key: "totalClicks", label: "Clics totaux", icon: "🖱️" },
@@ -16,10 +18,18 @@ const STAT_TILES: { key: keyof PlayerStatsResponse; label: string; icon: string 
   { key: "questsCompleted", label: "Quêtes complétées", icon: "📜" },
 ];
 
+/** Hidden easter egg: 10 clicks on the shiny-captures tile's emoji within this window
+ * unlocks a free Dynavolt. No visible counter or hint — it must stay a secret. */
+const SHINY_EGG_CLICKS_NEEDED = 10;
+const SHINY_EGG_CLICK_WINDOW_MS = 1500;
+
 export function StatsPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const [stats, setStats] = useState<PlayerStatsResponse | null>(null);
+  const [dynavoltReveal, setDynavoltReveal] = useState<PlayerCreatureView | null>(null);
+  const shinyClicks = useRef(0);
+  const shinyClickResetTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -29,6 +39,28 @@ export function StatsPage() {
         if (err instanceof ApiError && err.status === 401) logout();
       });
   }, [accessToken, logout]);
+
+  async function handleShinyEmojiClick() {
+    if (!accessToken || !stats || stats.hasDynavoltEasterEgg) return;
+
+    if (shinyClickResetTimer.current) window.clearTimeout(shinyClickResetTimer.current);
+    shinyClicks.current += 1;
+    shinyClickResetTimer.current = window.setTimeout(() => {
+      shinyClicks.current = 0;
+    }, SHINY_EGG_CLICK_WINDOW_MS);
+
+    if (shinyClicks.current < SHINY_EGG_CLICKS_NEEDED) return;
+    shinyClicks.current = 0;
+
+    try {
+      const creature = await claimDynavoltEasterEgg(accessToken);
+      setDynavoltReveal(creature);
+      setStats((prev) => (prev ? { ...prev, hasDynavoltEasterEgg: true } : prev));
+    } catch {
+      // Already claimed, or a transient network hiccup — stays silent either way, this is
+      // a hidden easter egg and shouldn't surface an error toast.
+    }
+  }
 
   return (
     <section className="rounded-3xl border-[3px] border-gold bg-gold-deep/25 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-sm">
@@ -43,7 +75,12 @@ export function StatsPage() {
               key={tile.key}
               className="flex flex-col items-center gap-1 rounded-2xl border-2 border-gold-deep bg-panel px-3 py-4 text-center"
             >
-              <span className="text-2xl">{tile.icon}</span>
+              <span
+                className="text-2xl"
+                onClick={tile.key === "totalShinyCaptures" ? handleShinyEmojiClick : undefined}
+              >
+                {tile.icon}
+              </span>
               <span className="text-xl font-black text-gold-light">{stats[tile.key].toString()}</span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-panel-foreground/60">
                 {tile.label}
@@ -52,6 +89,8 @@ export function StatsPage() {
           ))}
         </div>
       )}
+
+      {dynavoltReveal && <DynavoltUnlockModal creature={dynavoltReveal} onClose={() => setDynavoltReveal(null)} />}
     </section>
   );
 }

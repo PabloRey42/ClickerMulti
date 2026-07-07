@@ -53,6 +53,9 @@ model PlayerState {
   totalShinyCaptures   Int    @default(0)
   totalGoldEarned      BigInt @default(0)
   totalXpEarned        Int    @default(0)
+  /// Hidden easter egg: clicking the Statistiques page's shiny-captures emoji 10 times
+  /// gifts a free Dynavolt. Never resets once claimed, so it can't be farmed repeatedly.
+  hasDynavoltEasterEgg Boolean @default(false)
   updatedAt       DateTime @updatedAt
 }
 

@@ -8,4 +8,5 @@ export interface PlayerStatsResponse {
   creaturesOwned: number;
   leagueRank: number;
   questsCompleted: number;
+  hasDynavoltEasterEgg: boolean;
 }
