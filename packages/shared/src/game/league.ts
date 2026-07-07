@@ -6,19 +6,12 @@ export const LEAGUE_BASE_LEVEL = 40;
 export const LEAGUE_LEVEL_PER_RANK = 4;
 export const LEAGUE_RANK_BONUS_PER_RANK = 0.02;
 
-/** Rank 12 is a hardcoded spike to level 200, bypassing both the normal linear curve and
- * the MAX_LEVEL cap — trainer Pokémon aren't player-owned creatures, so nothing stops a
- * single rank from jumping the curve. Every other rank uses the normal formula. */
-const LEAGUE_LEVEL_SPIKE_RANK = 12;
-const LEAGUE_LEVEL_SPIKE_LEVEL = 200;
-
 export interface LeagueOpponent {
   speciesKey: string;
   level: number;
 }
 
 export function leagueOpponentLevel(rank: number): number {
-  if (rank === LEAGUE_LEVEL_SPIKE_RANK) return LEAGUE_LEVEL_SPIKE_LEVEL;
   return Math.min(MAX_LEVEL, LEAGUE_BASE_LEVEL + rank * LEAGUE_LEVEL_PER_RANK);
 }
 
