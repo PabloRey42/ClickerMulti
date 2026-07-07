@@ -45,6 +45,14 @@ model PlayerState {
   /// Permanent reward for fully completing the League skill tree: doubles shiny odds on
   /// every future wild encounter roll (see SHINY_CHANCE in game/constants.ts).
   hasShinyCharm   Boolean  @default(false)
+  /// Lifetime counters for the Statistiques tab — never decremented/reset, unlike
+  /// goldBalance which can be spent.
+  totalClicks          Int    @default(0)
+  totalPokemonDefeated Int    @default(0)
+  totalCaptures        Int    @default(0)
+  totalShinyCaptures   Int    @default(0)
+  totalGoldEarned      BigInt @default(0)
+  totalXpEarned        Int    @default(0)
   updatedAt       DateTime @updatedAt
 }
 

@@ -14,6 +14,7 @@ import leagueRoutes from "./modules/league/league.routes.js";
 import marketRoutes from "./modules/market/market.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import questsRoutes from "./modules/quests/quests.routes.js";
+import statsRoutes from "./modules/stats/stats.routes.js";
 
 const fastify = Fastify({ logger: true });
 
@@ -33,6 +34,7 @@ try {
   await fastify.register(marketRoutes, { prefix: "/api" });
   await fastify.register(adminRoutes, { prefix: "/api" });
   await fastify.register(questsRoutes, { prefix: "/api" });
+  await fastify.register(statsRoutes, { prefix: "/api" });
 
   fastify.get("/api/health", async () => ({ status: "ok" }));
 

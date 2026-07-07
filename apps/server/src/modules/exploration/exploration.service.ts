@@ -225,7 +225,14 @@ async function grantEncounterRewards(
     const result = await applyXpGain(tx, activeCreature, xpGained);
     leveledUp = result.leveledUp;
   }
-  await tx.playerState.update({ where: { userId }, data: { goldBalance: { increment: goldGained } } });
+  await tx.playerState.update({
+    where: { userId },
+    data: {
+      goldBalance: { increment: goldGained },
+      totalGoldEarned: { increment: goldGained },
+      totalXpEarned: { increment: xpGained },
+    },
+  });
 
   return { goldGained, xpGained, leveledUp };
 }
@@ -291,7 +298,16 @@ async function autoCaptureIfEnabled(
         const xpGained = Math.floor(scaledXpReward(encounter.level, bonuses) / 2);
         const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
         if (activeCreature) await applyXpGain(tx, activeCreature, xpGained);
-        await tx.playerState.update({ where: { userId }, data: { goldBalance: { increment: goldGained } } });
+        await tx.playerState.update({
+          where: { userId },
+          data: {
+            goldBalance: { increment: goldGained },
+            totalGoldEarned: { increment: goldGained },
+            totalXpEarned: { increment: xpGained },
+            totalCaptures: { increment: 1 },
+            totalShinyCaptures: encounter.isShiny ? { increment: 1 } : undefined,
+          },
+        });
         await bumpQuestObjective(tx, userId, "capture_creature");
         return { attempted: true, captured: true };
       }
@@ -423,10 +439,14 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     );
     const wildHpAfter = Math.max(0, encounter.currentHp - damageDealt);
 
-    await tx.playerState.update({ where: { userId }, data: { comboStacks: stacks, lastClickAt: now } });
+    await tx.playerState.update({
+      where: { userId },
+      data: { comboStacks: stacks, lastClickAt: now, totalClicks: { increment: 1 } },
+    });
 
     if (wildHpAfter <= 0) {
       victory = true;
+      await tx.playerState.update({ where: { userId }, data: { totalPokemonDefeated: { increment: 1 } } });
       await bumpQuestObjective(tx, userId, "win_battle");
       if (encounter.isLeagueBattle) {
         const result = await resolveLeagueVictory(tx, userId, encounter);
@@ -567,7 +587,16 @@ export async function captureEncounter(
         const xpResult = await applyXpGain(tx, activeCreature, xpGained);
         leveledUp = xpResult.leveledUp;
       }
-      await tx.playerState.update({ where: { userId }, data: { goldBalance: { increment: goldGained } } });
+      await tx.playerState.update({
+        where: { userId },
+        data: {
+          goldBalance: { increment: goldGained },
+          totalGoldEarned: { increment: goldGained },
+          totalXpEarned: { increment: xpGained },
+          totalCaptures: { increment: 1 },
+          totalShinyCaptures: encounter.isShiny ? { increment: 1 } : undefined,
+        },
+      });
       await bumpQuestObjective(tx, userId, "capture_creature");
 
       await autoHealIfEnabled(tx, userId);

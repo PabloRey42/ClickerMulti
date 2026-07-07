@@ -6,6 +6,7 @@ export * from "./types/league.js";
 export * from "./types/market.js";
 export * from "./types/admin.js";
 export * from "./types/quest.js";
+export * from "./types/stats.js";
 export * from "./game/combo.js";
 export * from "./game/battle.js";
 export * from "./game/pokeballs.js";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { Compass, LayoutGrid, ShieldAlert } from "lucide-react";
+import { Compass, LayoutGrid, ShieldAlert, BarChart3 } from "lucide-react";
 import { useAuthStore } from "./state/authStore";
 import { useExplorationStore } from "./state/explorationStore";
 import { LoginPage } from "./pages/LoginPage";
@@ -9,6 +9,7 @@ import { CityMapPage } from "./pages/CityMapPage";
 import { LeaguePage } from "./pages/LeaguePage";
 import { EncounterPage } from "./pages/EncounterPage";
 import { CollectionPage } from "./pages/CollectionPage";
+import { StatsPage } from "./pages/StatsPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
 import { AdminPage } from "./pages/AdminPage";
 import { TeamSidebar } from "./components/TeamSidebar";
@@ -20,7 +21,7 @@ import { ApiError } from "./api/client";
 
 const ADMIN_EMAIL = "admin@admin.com";
 
-type Section = "explore" | "collection" | "admin";
+type Section = "explore" | "collection" | "stats" | "admin";
 
 function NavTab({
   active,
@@ -140,6 +141,12 @@ export function App() {
             icon={LayoutGrid}
             label="Collection"
           />
+          <NavTab
+            active={section === "stats"}
+            onClick={() => setSection("stats")}
+            icon={BarChart3}
+            label="Statistiques"
+          />
           {user.email === ADMIN_EMAIL && (
             <NavTab
               active={section === "admin"}
@@ -170,6 +177,8 @@ export function App() {
       right={section === "admin" ? undefined : <TeamSidebar />}
     >
       {section === "collection" && <CollectionPage />}
+
+      {section === "stats" && <StatsPage />}
 
       {section === "admin" && <AdminPage />}
 
