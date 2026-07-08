@@ -6,7 +6,13 @@ import { useEvolutionStore } from "../state/evolutionStore";
 import { listCreatures, activateCreature, setTeamMembership, clearTeam, useEvolutionStone } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { ApiError } from "../api/client";
-import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName, creatureSpriteSrc } from "../theme/typeColors";
+import {
+  TYPE_LABEL,
+  typeBadgeStyle,
+  typeBadgeTextClassName,
+  creatureSpriteSrc,
+  creatureSpriteTransform,
+} from "../theme/typeColors";
 
 const DEX_ENTRIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - b.dexNumber);
 
@@ -245,6 +251,7 @@ export function CollectionPage() {
                       <img
                         src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                         alt={species.name}
+                        style={{ transform: creatureSpriteTransform(species.spriteFile) }}
                         className={`h-7 w-7 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                       />
                     ) : (
@@ -344,6 +351,7 @@ export function CollectionPage() {
                 <img
                   src={creatureSpriteSrc(species.spriteFile, anyShiny)}
                   alt={species.name}
+                  style={{ transform: creatureSpriteTransform(species.spriteFile) }}
                   className={`h-16 w-16 object-contain [image-rendering:pixelated] ${anyShiny ? "shiny-sprite" : ""}`}
                 />
               </div>

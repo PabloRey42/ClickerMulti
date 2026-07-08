@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import type { PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
-import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
+import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc, creatureSpriteTransform } from "../theme/typeColors";
 
 function TeamCard({ member }: { member: PlayerCreatureView }) {
   return (
@@ -15,6 +15,7 @@ function TeamCard({ member }: { member: PlayerCreatureView }) {
         <img
           src={creatureSpriteSrc(member.spriteFile, member.isShiny)}
           alt={member.name}
+          style={{ transform: creatureSpriteTransform(member.spriteFile) }}
           className={`h-11 w-11 object-contain [image-rendering:pixelated] ${member.isShiny ? "shiny-sprite" : ""}`}
         />
       </div>

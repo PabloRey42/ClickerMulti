@@ -8,7 +8,7 @@ import {
 } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { ApiError } from "../api/client";
-import { creatureSpriteSrc } from "../theme/typeColors";
+import { creatureSpriteSrc, creatureSpriteTransform } from "../theme/typeColors";
 import {
   listAdminUsers,
   getAdminUserDetail,
@@ -328,6 +328,7 @@ export function AdminPage() {
                     <img
                       src={creatureSpriteSrc(c.spriteFile, c.isShiny)}
                       alt={c.name}
+                      style={{ transform: creatureSpriteTransform(c.spriteFile) }}
                       className={`h-8 w-8 shrink-0 [image-rendering:pixelated] ${c.isShiny ? "shiny-sprite" : ""}`}
                     />
                     <div className="min-w-0 flex-1">

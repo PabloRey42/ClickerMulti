@@ -1,4 +1,4 @@
-import type { ElementalType } from "@farm-clicker/shared";
+import { SPECIES_CATALOG, type ElementalType } from "@farm-clicker/shared";
 
 /** Canonical real-game type colors (used as inline styles, not Tailwind classes, since
  * Tailwind's JIT scanner can't pick up dynamically interpolated arbitrary-value classes). */
@@ -52,6 +52,22 @@ export function typeIconSrc(type: ElementalType): string {
 /** Shiny variants live under /sprites/shiny/ using the same filename as the normal sprite. */
 export function creatureSpriteSrc(spriteFile: string, isShiny: boolean): string {
   return isShiny ? `/sprites/shiny/${spriteFile}` : `/sprites/${spriteFile}`;
+}
+
+/** spriteFile -> spriteScale, built once from the (client-bundled) species catalog. Keyed by
+ * spriteFile rather than speciesKey since several sprite render sites only ever get a bare
+ * spriteFile (e.g. ShinyCaptureInfo), not a full creature/species view — and spriteFile is
+ * unique per species anyway. */
+const SPRITE_SCALE_BY_FILE: Record<string, number> = Object.fromEntries(
+  Object.values(SPECIES_CATALOG).map((s) => [s.spriteFile, s.spriteScale]),
+);
+
+/** Relative on-screen size for a creature sprite (see SpeciesConfig.spriteScale's doc
+ * comment) — apply as `style={{ transform: creatureSpriteTransform(spriteFile) }}` on top of
+ * the existing object-contain box everywhere a creature sprite renders, so an evolution
+ * family always renders in ascending size order regardless of each sprite's own padding. */
+export function creatureSpriteTransform(spriteFile: string): string {
+  return `scale(${SPRITE_SCALE_BY_FILE[spriteFile] ?? 1})`;
 }
 
 /** Types whose accent color is light enough to need dark text for contrast. */

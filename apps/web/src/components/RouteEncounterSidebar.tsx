@@ -34,6 +34,7 @@ export function RouteEncounterSidebar() {
               <img
                 src={`/sprites/${species.spriteFile}`}
                 alt={species.name}
+                style={{ transform: `scale(${species.spriteScale})` }}
                 className="h-9 w-9 shrink-0 [image-rendering:pixelated]"
               />
               <div className="min-w-0 flex-1">

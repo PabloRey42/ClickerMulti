@@ -15,7 +15,7 @@ import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { useTeamStore } from "../state/teamStore";
 import { useEvolutionStore } from "../state/evolutionStore";
-import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
+import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc, creatureSpriteTransform } from "../theme/typeColors";
 import { playShinySound } from "../theme/shinySound";
 import { LeagueVictoryModal } from "../components/LeagueVictoryModal";
 import { ShinyCaptureModal } from "../components/ShinyCaptureModal";
@@ -339,6 +339,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
                 <img
                   src={creatureSpriteSrc(encounter.spriteFile, encounter.isShiny)}
                   alt={encounter.name}
+                  style={{ transform: creatureSpriteTransform(encounter.spriteFile) }}
                   className={`h-full w-full object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] ${
                     encounter.isShiny ? "shiny-sprite" : ""
                   }`}
@@ -365,7 +366,8 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
               <img
                 src={creatureSpriteSrc(creature.spriteFile, creature.isShiny)}
                 alt={creature.name}
-                className={`absolute bottom-2 left-1/2 h-32 w-32 -translate-x-1/2 scale-x-[-1] object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-60 sm:w-60 ${
+                style={{ transform: `translateX(-50%) scaleX(-1) ${creatureSpriteTransform(creature.spriteFile)}` }}
+                className={`absolute bottom-2 left-1/2 h-32 w-32 object-contain [image-rendering:pixelated] drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)] sm:h-60 sm:w-60 ${
                   creature.isShiny ? "shiny-sprite" : ""
                 }`}
               />
