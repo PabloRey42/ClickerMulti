@@ -3,11 +3,14 @@ import {
   SPECIES_CATALOG,
   STARTER_SPECIES_KEYS,
   MAX_TEAM_SIZE,
+  STONE_CATALOG,
   creatureMaxHp,
+  resolveStoneEvolution,
   type PlayerCreatureView,
   type SpeciesView,
+  type UseStoneResponse,
 } from "@farm-clicker/shared";
-import { buildCreatureView, applyPendingEvolution } from "../../lib/battle-db.js";
+import { buildCreatureView, applyPendingEvolution, lockInventoryItem } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class CreatureNotFoundError extends Error {}
@@ -16,6 +19,9 @@ export class CreatureNotOnTeamError extends Error {}
 export class TeamFullError extends Error {}
 export class InvalidStarterError extends Error {}
 export class StarterAlreadyChosenError extends Error {}
+export class InvalidStoneError extends Error {}
+export class NoStoneEvolutionError extends Error {}
+export class InsufficientStonesError extends Error {}
 
 export function getStarterOptions(): SpeciesView[] {
   return STARTER_SPECIES_KEYS.map((key) => {
@@ -149,4 +155,46 @@ export async function clearTeamExceptActive(prisma: PrismaClient, userId: string
   });
 
   return listCreatures(prisma, userId);
+}
+
+/** Player-initiated evolution via a shop-bought stone — the counterpart to the automatic
+ * level-based system in battle-db.ts's applyXpGain, for the species that have no real level
+ * to auto-evolve at (Vulpix, Eevee, Poliwhirl, Gloom...). Consumes one stone from inventory
+ * and evolves the target creature in the same transaction; both row-locked first (inventory
+ * via lockInventoryItem, same FOR UPDATE idiom as lockPlayerState/lockActiveCreature) so a
+ * double-click can't spend the same last stone twice. */
+export async function useEvolutionStone(
+  prisma: PrismaClient,
+  userId: string,
+  creatureId: string,
+  stoneKey: string,
+): Promise<UseStoneResponse> {
+  if (!STONE_CATALOG[stoneKey]) throw new InvalidStoneError();
+
+  return prisma.$transaction(async (tx) => {
+    const creature = await tx.playerCreature.findFirst({ where: { id: creatureId, userId } });
+    if (!creature) throw new CreatureNotFoundError();
+
+    const targetKey = resolveStoneEvolution(creature.speciesKey, stoneKey);
+    if (!targetKey) throw new NoStoneEvolutionError();
+
+    const inventory = await lockInventoryItem(tx, userId, stoneKey);
+    if (!inventory || inventory.quantity < 1) throw new InsufficientStonesError();
+
+    await tx.playerInventoryItem.update({
+      where: { userId_itemKey: { userId, itemKey: stoneKey } },
+      data: { quantity: { decrement: 1 } },
+    });
+
+    const targetSpecies = SPECIES_CATALOG[targetKey];
+    const updated = await tx.playerCreature.update({
+      where: { id: creature.id },
+      data: { speciesKey: targetKey, currentHp: creatureMaxHp(targetSpecies.baseHp, creature.level) },
+    });
+
+    return {
+      creature: buildCreatureView(updated),
+      evolution: [{ fromSpeciesKey: creature.speciesKey, toSpeciesKey: targetKey }],
+    };
+  });
 }

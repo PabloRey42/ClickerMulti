@@ -1,4 +1,4 @@
-import type { Prisma, PlayerState, PlayerCreature, WildEncounter } from "@prisma/client";
+import type { Prisma, PlayerState, PlayerCreature, WildEncounter, PlayerInventoryItem } from "@prisma/client";
 import {
   SPECIES_CATALOG,
   MAX_LEVEL,
@@ -29,6 +29,17 @@ export async function lockActiveCreature(tx: Prisma.TransactionClient, userId: s
 export async function lockWildEncounter(tx: Prisma.TransactionClient, userId: string): Promise<WildEncounter | null> {
   const rows = await tx.$queryRaw<WildEncounter[]>`
     SELECT * FROM "WildEncounter" WHERE "userId" = ${userId} FOR UPDATE
+  `;
+  return rows[0] ?? null;
+}
+
+export async function lockInventoryItem(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  itemKey: string,
+): Promise<PlayerInventoryItem | null> {
+  const rows = await tx.$queryRaw<PlayerInventoryItem[]>`
+    SELECT * FROM "PlayerInventoryItem" WHERE "userId" = ${userId} AND "itemKey" = ${itemKey} FOR UPDATE
   `;
   return rows[0] ?? null;
 }

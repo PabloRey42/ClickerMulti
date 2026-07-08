@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import {
   POKEBALL_CATALOG,
   POTION_CATALOG,
+  STONE_CATALOG,
   type ShopCatalogResponse,
   type BuyItemResponse,
 } from "@farm-clicker/shared";
@@ -35,11 +36,19 @@ export async function getShopCatalog(prisma: PrismaClient, userId: string): Prom
     owned: ownedByKey.get(p.key) ?? 0,
   }));
 
-  return { goldBalance: playerState.goldBalance, pokeballs, potions };
+  const stones = Object.values(STONE_CATALOG).map((s) => ({
+    key: s.key,
+    name: s.name,
+    goldCost: s.goldCost,
+    spriteFile: s.spriteFile,
+    owned: ownedByKey.get(s.key) ?? 0,
+  }));
+
+  return { goldBalance: playerState.goldBalance, pokeballs, potions, stones };
 }
 
 function findShopItem(itemKey: string): { goldCost: bigint } | undefined {
-  return POKEBALL_CATALOG[itemKey] ?? POTION_CATALOG[itemKey];
+  return POKEBALL_CATALOG[itemKey] ?? POTION_CATALOG[itemKey] ?? STONE_CATALOG[itemKey];
 }
 
 export async function buyItem(

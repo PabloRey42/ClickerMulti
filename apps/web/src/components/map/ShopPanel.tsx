@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { PokeballCatalogEntry, PotionCatalogEntry } from "@farm-clicker/shared";
+import type { PokeballCatalogEntry, PotionCatalogEntry, StoneCatalogEntry } from "@farm-clicker/shared";
 import { useAuthStore } from "../../state/authStore";
 import { getShopCatalog, buyItem } from "../../api/shop";
 import { ApiError } from "../../api/client";
@@ -41,6 +41,7 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
   const [gold, setGold] = useState<bigint | null>(null);
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [potions, setPotions] = useState<PotionCatalogEntry[]>([]);
+  const [stones, setStones] = useState<StoneCatalogEntry[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -59,6 +60,7 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
         setGold(catalog.goldBalance);
         setPokeballs(catalog.pokeballs);
         setPotions(catalog.potions);
+        setStones(catalog.stones);
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) logout();
@@ -73,6 +75,7 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
       setGold(result.goldBalance);
       setPokeballs((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
       setPotions((prev) => prev.map((p) => (p.key === key ? { ...p, owned: result.owned } : p)));
+      setStones((prev) => prev.map((s) => (s.key === key ? { ...s, owned: result.owned } : s)));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     } finally {
@@ -121,7 +124,7 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
         </ul>
 
         <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">Soins</h3>
-        <ul className="flex flex-col gap-2">
+        <ul className="mb-4 flex flex-col gap-2">
           {potions.map((p) => (
             <li key={p.key} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2">
               <img src={`/items/${p.spriteFile}`} alt={p.name} className="h-9 w-9 shrink-0 [image-rendering:pixelated]" />
@@ -141,6 +144,32 @@ export function ShopPanel({ onClose }: { onClose: () => void }) {
                 Acheter
                 <br />
                 {(p.goldCost * BigInt(quantityFor(p.key))).toString()}
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+          Pierres d'évolution
+        </h3>
+        <ul className="flex flex-col gap-2">
+          {stones.map((s) => (
+            <li key={s.key} className="flex items-center gap-3 rounded-xl border-2 border-gold-deep bg-panel-light px-3 py-2">
+              <img src={`/items/${s.spriteFile}`} alt={s.name} className="h-9 w-9 shrink-0 [image-rendering:pixelated]" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-extrabold text-gold-light">{s.name}</p>
+                <p className="text-xs font-semibold text-panel-foreground/60">Possédé : {s.owned}</p>
+              </div>
+              <QuantityStepper value={quantityFor(s.key)} onChange={(v) => setQuantityFor(s.key, v)} />
+              <button
+                type="button"
+                disabled={buying === s.key || (gold !== null && gold < s.goldCost * BigInt(quantityFor(s.key)))}
+                onClick={() => handleBuy(s.key)}
+                className="shrink-0 rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-3 py-1.5 text-center text-[10px] font-black uppercase leading-tight text-panel disabled:opacity-50"
+              >
+                Acheter
+                <br />
+                {(s.goldCost * BigInt(quantityFor(s.key))).toString()}
               </button>
             </li>
           ))}

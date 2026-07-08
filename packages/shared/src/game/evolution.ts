@@ -23,3 +23,11 @@ export function resolveEvolutionSteps(speciesKey: string, level: number): Evolut
   }
   return steps;
 }
+
+/** Resolves a player-initiated stone evolution: does `speciesKey` have a stone-evolution
+ * option for this exact `stoneKey`? Returns the target speciesKey, or null if this species
+ * has no such option (wrong stone, or a species with no stone evolutions at all). */
+export function resolveStoneEvolution(speciesKey: string, stoneKey: string): string | null {
+  const options = SPECIES_CATALOG[speciesKey]?.stoneEvolutions;
+  return options?.find((o) => o.stoneKey === stoneKey)?.intoKey ?? null;
+}

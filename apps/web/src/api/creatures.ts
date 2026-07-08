@@ -1,4 +1,4 @@
-import type { PlayerCreatureView, SpeciesView } from "@farm-clicker/shared";
+import type { PlayerCreatureView, SpeciesView, UseStoneResponse } from "@farm-clicker/shared";
 import { apiRequest } from "./client";
 
 export function listCreatures(accessToken: string) {
@@ -36,5 +36,13 @@ export function clearTeam(accessToken: string) {
   return apiRequest<PlayerCreatureView[]>("/api/creatures/team/clear", {
     method: "POST",
     accessToken,
+  });
+}
+
+export function useEvolutionStone(accessToken: string, creatureId: string, stoneKey: string) {
+  return apiRequest<UseStoneResponse>(`/api/creatures/${creatureId}/use-stone`, {
+    method: "POST",
+    accessToken,
+    body: { stoneKey },
   });
 }

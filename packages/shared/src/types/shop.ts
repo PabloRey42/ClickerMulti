@@ -16,10 +16,19 @@ export interface PotionCatalogEntry {
   owned: number;
 }
 
+export interface StoneCatalogEntry {
+  key: string;
+  name: string;
+  goldCost: bigint;
+  spriteFile: string;
+  owned: number;
+}
+
 export interface ShopCatalogResponse {
   goldBalance: bigint;
   pokeballs: PokeballCatalogEntry[];
   potions: PotionCatalogEntry[];
+  stones: StoneCatalogEntry[];
 }
 
 export interface BuyItemResponse {

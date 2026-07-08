@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { SPECIES_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
+import { SPECIES_CATALOG, STONE_CATALOG, type PlayerCreatureView } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
-import { listCreatures, activateCreature, setTeamMembership, clearTeam } from "../api/creatures";
+import { useEvolutionStore } from "../state/evolutionStore";
+import { listCreatures, activateCreature, setTeamMembership, clearTeam, useEvolutionStone } from "../api/creatures";
+import { getShopCatalog } from "../api/shop";
 import { ApiError } from "../api/client";
 import { TYPE_LABEL, typeBadgeStyle, typeBadgeTextClassName, creatureSpriteSrc } from "../theme/typeColors";
 
@@ -12,11 +14,53 @@ function pad(n: number) {
   return `#${n.toString().padStart(3, "0")}`;
 }
 
+/** One button per stone option a creature's species has (Eevee has 4) — only rendered when
+ * the species actually has stoneEvolutions (see species.ts's doc comment: the stone/
+ * friendship/trade evolutions the pure level-based system deliberately can't reach). */
+function StoneEvolutionButtons({
+  creature,
+  stoneCounts,
+  busy,
+  onUse,
+}: {
+  creature: PlayerCreatureView;
+  stoneCounts: Record<string, number>;
+  busy: boolean;
+  onUse: (stoneKey: string) => void;
+}) {
+  const options = SPECIES_CATALOG[creature.speciesKey]?.stoneEvolutions;
+  if (!options || options.length === 0) return null;
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+      {options.map((opt) => {
+        const stone = STONE_CATALOG[opt.stoneKey];
+        const owned = stoneCounts[opt.stoneKey] ?? 0;
+        return (
+          <button
+            key={opt.stoneKey}
+            type="button"
+            disabled={busy || owned < 1}
+            onClick={() => onUse(opt.stoneKey)}
+            title={owned < 1 ? `Tu n'as pas de ${stone.name}` : `Utiliser une ${stone.name}`}
+            className="flex items-center gap-1 rounded-lg border border-gold-deep/60 bg-panel px-2 py-1 text-[10px] font-extrabold text-gold-light shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-40 disabled:hover:scale-100"
+          >
+            <img src={`/items/${stone.spriteFile}`} alt={stone.name} className="h-4 w-4 [image-rendering:pixelated]" />
+            {stone.name} ({owned})
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CollectionPage() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const refreshTeamSidebar = useTeamStore((s) => s.refresh);
+  const enqueueEvolutions = useEvolutionStore((s) => s.enqueue);
   const [creatures, setCreatures] = useState<PlayerCreatureView[]>([]);
+  const [stoneCounts, setStoneCounts] = useState<Record<string, number>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [compact, setCompact] = useState(false);
@@ -26,6 +70,7 @@ export function CollectionPage() {
   useEffect(() => {
     if (!accessToken) return;
     refresh();
+    refreshStoneCounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
@@ -35,6 +80,41 @@ export function CollectionPage() {
       setCreatures(await listCreatures(accessToken));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
+    }
+  }
+
+  async function refreshStoneCounts() {
+    if (!accessToken) return;
+    try {
+      const catalog = await getShopCatalog(accessToken);
+      setStoneCounts(Object.fromEntries(catalog.stones.map((s) => [s.key, s.owned])));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) logout();
+    }
+  }
+
+  async function handleUseStone(creature: PlayerCreatureView, stoneKey: string) {
+    if (!accessToken || busyId) return;
+    setBusyId(creature.id);
+    setError(null);
+    try {
+      const result = await useEvolutionStone(accessToken, creature.id, stoneKey);
+      setCreatures((prev) => prev.map((c) => (c.id === creature.id ? result.creature : c)));
+      enqueueEvolutions(result.evolution.map((step) => ({ step, isShiny: creature.isShiny })));
+      await refreshStoneCounts();
+      await refreshTeamSidebar(accessToken);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return logout();
+      if (err instanceof ApiError && err.status === 409) {
+        const body = err.body as { error?: string } | undefined;
+        setError(
+          body?.error === "insufficient_stones"
+            ? "Tu n'as plus cette pierre."
+            : "Ce Pokémon ne peut pas évoluer avec cette pierre.",
+        );
+      }
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -189,37 +269,42 @@ export function CollectionPage() {
                 {isExpanded && (
                   <div className="flex flex-col gap-1.5 border-t border-gold-deep/30 px-2 py-2">
                     {owned.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between gap-2 rounded-lg bg-panel-light px-2 py-1.5"
-                      >
-                        <p className="min-w-0 truncate text-[11px] font-bold text-panel-foreground/80">
-                          {c.isShiny ? "✨ " : ""}
-                          {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
-                        </p>
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          <button
-                            type="button"
-                            disabled={busyId === c.id}
-                            onClick={() => handleToggleTeam(c)}
-                            className="rounded-lg bg-stat-xp px-2 py-1 text-[10px] font-extrabold text-panel-foreground shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
-                          >
-                            {c.isOnTeam ? "Retirer" : "Ajouter"}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
-                            onClick={() => handleActivate(c)}
-                            className={[
-                              "rounded-lg px-2 py-1 text-[10px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
-                              c.isActive
-                                ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
-                                : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
-                            ].join(" ")}
-                          >
-                            Actif
-                          </button>
+                      <div key={c.id} className="rounded-lg bg-panel-light px-2 py-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="min-w-0 truncate text-[11px] font-bold text-panel-foreground/80">
+                            {c.isShiny ? "✨ " : ""}
+                            {c.nickname ?? c.name} {c.isActive ? "★" : ""} · Nv. {c.level} · {c.currentHp}/{c.maxHp} PV
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={busyId === c.id}
+                              onClick={() => handleToggleTeam(c)}
+                              className="rounded-lg bg-stat-xp px-2 py-1 text-[10px] font-extrabold text-panel-foreground shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                            >
+                              {c.isOnTeam ? "Retirer" : "Ajouter"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
+                              onClick={() => handleActivate(c)}
+                              className={[
+                                "rounded-lg px-2 py-1 text-[10px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
+                                c.isActive
+                                  ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
+                                  : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
+                              ].join(" ")}
+                            >
+                              Actif
+                            </button>
+                          </div>
                         </div>
+                        <StoneEvolutionButtons
+                          creature={c}
+                          stoneCounts={stoneCounts}
+                          busy={busyId === c.id}
+                          onUse={(stoneKey) => handleUseStone(c, stoneKey)}
+                        />
                       </div>
                     ))}
                   </div>
@@ -326,6 +411,12 @@ export function CollectionPage() {
                       Actif
                     </button>
                   </div>
+                  <StoneEvolutionButtons
+                    creature={c}
+                    stoneCounts={stoneCounts}
+                    busy={busyId === c.id}
+                    onUse={(stoneKey) => handleUseStone(c, stoneKey)}
+                  />
                 </div>
               ))}
             </li>

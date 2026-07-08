@@ -36,6 +36,13 @@ export interface PlayerCreatureView {
   evolvedNow: EvolutionStep[];
 }
 
+export interface UseStoneResponse {
+  creature: PlayerCreatureView;
+  /** Always exactly one step on success — an array for symmetry with the level-based
+   * evolution responses, so the client can feed it into the same animation queue. */
+  evolution: EvolutionStep[];
+}
+
 export interface WildEncounterView {
   routeKey: string;
   speciesKey: string;

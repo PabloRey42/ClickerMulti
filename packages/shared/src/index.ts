@@ -12,6 +12,7 @@ export * from "./game/battle.js";
 export * from "./game/evolution.js";
 export * from "./game/pokeballs.js";
 export * from "./game/potions.js";
+export * from "./game/stones.js";
 export * from "./game/bignum.js";
 export * from "./game/constants.js";
 export * from "./game/league.js";
