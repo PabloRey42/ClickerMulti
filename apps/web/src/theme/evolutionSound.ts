@@ -1,7 +1,11 @@
 /** No evolution jingle asset exists, so this synthesizes the whole ~7s reveal's audio with
- * the Web Audio API — same idiom as shinySound.ts/electricSound.ts. A slow rising "charging"
- * drone during the silhouette build-up, a bright double-flash chime at each whiteout, and a
- * triumphant major fanfare at the final reveal. All notes are scheduled up front against
+ * the Web Audio API — same idiom as shinySound.ts/electricSound.ts. Two ascending "magic
+ * charging" twinkle arpeggios (sine bells, accelerating), a bright double-flash chime at
+ * each whiteout, and a triumphant fanfare with a sparkle shimmer on top at the final reveal.
+ * Deliberately built entirely from sine/triangle notes, no sawtooth/continuous pitch-rising
+ * drone — an earlier version used a rising sawtooth oscillator for the charging phase, which
+ * reads as a siren/alarm rather than anything Pokémon-like; short bell-like notes evoke the
+ * real games' evolution jingle far better. All notes are scheduled up front against
  * `ctx.currentTime` offsets (matching the existing sound helpers' idiom) so this stays a
  * single fire-and-forget call. */
 export function playEvolutionSound(): void {
@@ -9,72 +13,53 @@ export function playEvolutionSound(): void {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new Ctx();
 
-    // Charging drone: a slowly rising sawtooth under the first silhouette build-up.
-    const drone = ctx.createOscillator();
-    const droneGain = ctx.createGain();
-    drone.type = "sawtooth";
-    drone.frequency.setValueAtTime(110, ctx.currentTime);
-    drone.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 2.1);
-    droneGain.gain.setValueAtTime(0, ctx.currentTime);
-    droneGain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 1.0);
-    droneGain.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 2.1);
-    droneGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.3);
-    drone.connect(droneGain);
-    droneGain.connect(ctx.destination);
-    drone.start(ctx.currentTime);
-    drone.stop(ctx.currentTime + 2.3);
+    function playNote(freq: number, startAt: number, duration: number, gainPeak: number, type: OscillatorType) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, startAt);
+      gain.gain.linearRampToValueAtTime(gainPeak, startAt + duration * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startAt);
+      osc.stop(startAt + duration + 0.05);
+    }
+
+    /** A twinkling arpeggio that climbs through `scale` and speeds up as it goes — the
+     * "charging magic" build-up, replacing the old rising-drone approach. */
+    function playTwinkleBuildUp(scale: number[], startAt: number, totalDuration: number, gainPeak: number) {
+      let t = 0;
+      let noteDur = 0.32;
+      let idx = 0;
+      while (t < totalDuration) {
+        playNote(scale[idx % scale.length], startAt + t, noteDur, gainPeak, "sine");
+        t += noteDur * 0.68;
+        noteDur = Math.max(0.09, noteDur * 0.91);
+        idx++;
+      }
+    }
+
+    // Phase 1: first silhouette build-up — a bright pentatonic-ish climb (C5 D5 E5 G5 A5 C6 D6).
+    const scale1 = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66];
+    playTwinkleBuildUp(scale1, ctx.currentTime, 2.1, 0.15);
 
     // First whiteout chime (silhouette locked in).
     const chime1 = ctx.currentTime + 2.2;
-    [1318.5, 1568].forEach((freq, i) => {
-      const startAt = chime1 + i * 0.05;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, startAt);
-      gain.gain.linearRampToValueAtTime(0.22, startAt + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.35);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(startAt);
-      osc.stop(startAt + 0.4);
-    });
+    [1318.5, 1568].forEach((freq, i) => playNote(freq, chime1 + i * 0.05, 0.35, 0.22, "sine"));
 
-    // Second charging drone during the new-form silhouette build-up.
-    const drone2 = ctx.createOscillator();
-    const drone2Gain = ctx.createGain();
-    drone2.type = "sawtooth";
-    const drone2Start = ctx.currentTime + 2.5;
-    drone2.frequency.setValueAtTime(150, drone2Start);
-    drone2.frequency.exponentialRampToValueAtTime(440, drone2Start + 2.0);
-    drone2Gain.gain.setValueAtTime(0, drone2Start);
-    drone2Gain.gain.linearRampToValueAtTime(0.12, drone2Start + 1.0);
-    drone2Gain.gain.linearRampToValueAtTime(0.2, drone2Start + 2.0);
-    drone2Gain.gain.linearRampToValueAtTime(0, drone2Start + 2.2);
-    drone2.connect(drone2Gain);
-    drone2Gain.connect(ctx.destination);
-    drone2.start(drone2Start);
-    drone2.stop(drone2Start + 2.2);
+    // Phase 2: second build-up (new form emerging) — same shape, shifted up for distinction.
+    const scale2 = scale1.map((f) => f * 1.19);
+    playTwinkleBuildUp(scale2, ctx.currentTime + 2.5, 1.9, 0.17);
 
-    // Final reveal: a big bright major fanfare.
+    // Final reveal: a warm triumphant fanfare...
     const fanfareStart = ctx.currentTime + 4.6;
-    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5, E5, G5, C6, E6
-    const noteDuration = 0.18;
-    notes.forEach((freq, i) => {
-      const startAt = fanfareStart + i * noteDuration * 0.9;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = i < 3 ? "triangle" : "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, startAt);
-      gain.gain.linearRampToValueAtTime(0.28, startAt + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, startAt + noteDuration * 3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(startAt);
-      osc.stop(startAt + noteDuration * 3.2);
-    });
+    const fanfareNotes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5, E5, G5, C6, E6
+    fanfareNotes.forEach((freq, i) => playNote(freq, fanfareStart + i * 0.16, 0.5, 0.26, i < 3 ? "triangle" : "sine"));
+    // ...topped with a quick high sparkle shimmer.
+    const shimmer = [1568, 1760, 2093, 2349];
+    shimmer.forEach((freq, i) => playNote(freq, fanfareStart + 0.5 + i * 0.07, 0.3, 0.1, "sine"));
 
     setTimeout(() => ctx.close(), 8000);
   } catch {
