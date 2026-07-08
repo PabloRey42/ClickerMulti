@@ -7,7 +7,7 @@ import {
   type PlayerCreatureView,
   type SpeciesView,
 } from "@farm-clicker/shared";
-import { buildCreatureView } from "../../lib/battle-db.js";
+import { buildCreatureView, applyPendingEvolution } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class CreatureNotFoundError extends Error {}
@@ -60,7 +60,16 @@ export async function chooseStarter(
 export async function listCreatures(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
   await bumpQuestObjective(prisma, userId, "open_collection");
   const creatures = await prisma.playerCreature.findMany({ where: { userId }, orderBy: { caughtAt: "asc" } });
-  return creatures.map(buildCreatureView);
+
+  const views: PlayerCreatureView[] = [];
+  for (const creature of creatures) {
+    // Retroactively catches up any creature whose level already qualifies for an evolution
+    // it never went through (e.g. it reached that level before this feature shipped) — see
+    // applyPendingEvolution's doc comment. Cheap no-op for the common case.
+    const { creature: resolved, evolution } = await applyPendingEvolution(prisma, creature);
+    views.push({ ...buildCreatureView(resolved), evolvedNow: evolution });
+  }
+  return views;
 }
 
 export async function activateCreature(

@@ -1,4 +1,5 @@
 import type { ElementalType } from "../world/species.js";
+import type { EvolutionStep } from "../game/evolution.js";
 
 export interface SpeciesView {
   key: string;
@@ -28,6 +29,11 @@ export interface PlayerCreatureView {
   isActive: boolean;
   isShiny: boolean;
   caughtAt: string;
+  /** Evolution step(s) this creature's speciesKey just caught up to on this fetch — only
+   * ever non-empty from `listCreatures`, which retroactively evolves any creature whose
+   * level already qualifies (e.g. a high-level creature caught before this feature shipped).
+   * Empty everywhere else. See EvolutionAnimation.tsx for how the client queues these. */
+  evolvedNow: EvolutionStep[];
 }
 
 export interface WildEncounterView {

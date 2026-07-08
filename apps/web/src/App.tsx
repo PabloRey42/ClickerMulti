@@ -16,8 +16,10 @@ import { TeamSidebar } from "./components/TeamSidebar";
 import { RouteEncounterSidebar } from "./components/RouteEncounterSidebar";
 import { ActiveQuestTracker } from "./components/ActiveQuestTracker";
 import { InventoryPanel } from "./components/InventoryPanel";
+import { EvolutionAnimation } from "./components/EvolutionAnimation";
 import { listCreatures } from "./api/creatures";
 import { ApiError } from "./api/client";
+import { useEvolutionStore } from "./state/evolutionStore";
 
 const ADMIN_EMAIL = "admin@admin.com";
 
@@ -94,16 +96,30 @@ export function App() {
   const transitioning = useExplorationStore((s) => s.transitioning);
   const goToCity = useExplorationStore((s) => s.goToCity);
   const goToLeague = useExplorationStore((s) => s.goToLeague);
+  const evolutionQueue = useEvolutionStore((s) => s.queue);
+  const enqueueEvolutions = useEvolutionStore((s) => s.enqueue);
+  const dequeueEvolution = useEvolutionStore((s) => s.dequeue);
 
   useEffect(() => {
     if (!accessToken) return;
     setHasCreature(null);
     listCreatures(accessToken)
-      .then((creatures) => setHasCreature(creatures.length > 0))
+      .then((creatures) => {
+        setHasCreature(creatures.length > 0);
+        // Catches players up on any evolution their creatures already qualified for before
+        // this feature existed (or before their species got an evolution level added) — this
+        // is the one place guaranteed to run before TeamSidebar's own listCreatures call, so
+        // it's the only call site that ever surfaces retroactive evolvedNow data; see
+        // creatures.service.ts's listCreatures and evolutionStore.ts.
+        const retroactive = creatures.flatMap((c) =>
+          c.evolvedNow.map((step) => ({ step, isShiny: c.isShiny })),
+        );
+        if (retroactive.length > 0) enqueueEvolutions(retroactive);
+      })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) logout();
       });
-  }, [accessToken, logout]);
+  }, [accessToken, logout, enqueueEvolutions]);
 
   if (!user) return <LoginPage />;
 
@@ -200,6 +216,15 @@ export function App() {
       )}
 
       {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
+
+      {evolutionQueue.length > 0 && (
+        <EvolutionAnimation
+          key={evolutionQueue[0].queuedAt}
+          step={evolutionQueue[0].step}
+          isShiny={evolutionQueue[0].isShiny}
+          onDone={dequeueEvolution}
+        />
+      )}
     </GameShell>
   );
 }

@@ -432,3 +432,133 @@ body {
 .dynavolt-title {
   animation: shiny-capture-title-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
 }
+
+/* Evolution reveal: the longest, most staged animation in the game (silhouette build-up,
+ * whiteout, silhouette of the new form, second whiteout, full-color pop-in, held banner —
+ * see EvolutionAnimation.tsx for the phase timing, ~7.3s total). Rings/stars reuse the
+ * shiny-capture-ring and shiny-reveal-star building blocks, retinted via inline style. */
+.evolution-bg-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    #b98cff 0deg,
+    transparent 10deg,
+    transparent 20deg,
+    #ffe066 40deg,
+    transparent 50deg,
+    transparent 60deg,
+    #66e0ff 80deg,
+    transparent 90deg,
+    transparent 100deg,
+    #b98cff 120deg,
+    transparent 130deg,
+    transparent 140deg,
+    #ffe066 160deg,
+    transparent 170deg,
+    transparent 180deg,
+    #66e0ff 200deg,
+    transparent 210deg,
+    transparent 220deg,
+    #b98cff 240deg,
+    transparent 250deg,
+    transparent 260deg,
+    #ffe066 280deg,
+    transparent 290deg,
+    transparent 300deg,
+    #66e0ff 320deg,
+    transparent 330deg,
+    transparent 340deg,
+    #b98cff 360deg
+  );
+  opacity: 0.35;
+  animation: evolution-rays-spin 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes evolution-rays-spin {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+.evolution-flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  animation: evolution-flash-anim 0.5s ease-out forwards;
+}
+
+@keyframes evolution-flash-anim {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.evolution-silhouette {
+  filter: brightness(0) invert(1) drop-shadow(0 0 18px #d9b8ff);
+}
+
+.evolution-charge-pulse {
+  animation: evolution-charge-pulse-anim 1s ease-in-out infinite;
+}
+
+@keyframes evolution-charge-pulse-anim {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(0) invert(1) drop-shadow(0 0 16px #d9b8ff);
+  }
+  50% {
+    transform: scale(1.08);
+    filter: brightness(0) invert(1) drop-shadow(0 0 34px #fff6d5);
+  }
+}
+
+.evolution-reveal-pop {
+  animation: evolution-reveal-pop-anim 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes evolution-reveal-pop-anim {
+  0% {
+    transform: scale(0.6);
+    filter: brightness(0) invert(1) drop-shadow(0 0 32px #fff6d5);
+  }
+  55% {
+    transform: scale(1.22);
+    filter: brightness(1.7) drop-shadow(0 0 32px #ffe066);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+  }
+}
+
+.evolution-caption {
+  animation: evolution-caption-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes evolution-caption-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.evolution-title-in {
+  animation: shiny-capture-title-anim 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}

@@ -9,6 +9,7 @@ export * from "./types/quest.js";
 export * from "./types/stats.js";
 export * from "./game/combo.js";
 export * from "./game/battle.js";
+export * from "./game/evolution.js";
 export * from "./game/pokeballs.js";
 export * from "./game/potions.js";
 export * from "./game/bignum.js";

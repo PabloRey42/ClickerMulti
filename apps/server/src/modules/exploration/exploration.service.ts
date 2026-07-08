@@ -31,6 +31,7 @@ import {
   type AttackResponse,
   type CaptureResponse,
   type FinishEncounterResponse,
+  type EvolutionStep,
 } from "@farm-clicker/shared";
 import {
   lockPlayerState,
@@ -215,15 +216,17 @@ async function grantEncounterRewards(
   userId: string,
   level: number,
   bonuses: SkillTreeBonuses,
-): Promise<{ goldGained: bigint; xpGained: number; leveledUp: boolean }> {
+): Promise<{ goldGained: bigint; xpGained: number; leveledUp: boolean; evolution: EvolutionStep[] }> {
   const goldGained = scaledGoldReward(level, bonuses);
   const xpGained = scaledXpReward(level, bonuses);
   let leveledUp = false;
+  let evolution: EvolutionStep[] = [];
 
   const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
   if (activeCreature) {
     const result = await applyXpGain(tx, activeCreature, xpGained);
     leveledUp = result.leveledUp;
+    evolution = result.evolution;
   }
   await tx.playerState.update({
     where: { userId },
@@ -234,7 +237,7 @@ async function grantEncounterRewards(
     },
   });
 
-  return { goldGained, xpGained, leveledUp };
+  return { goldGained, xpGained, leveledUp, evolution };
 }
 
 /** If auto-capture is on, throws owned balls cheapest-first (draining each tier before
@@ -246,9 +249,9 @@ async function autoCaptureIfEnabled(
   encounter: { speciesKey: string; level: number; isShiny: boolean },
   wildSpecies: SpeciesConfig,
   bonuses: SkillTreeBonuses,
-): Promise<{ attempted: boolean; captured: boolean }> {
+): Promise<{ attempted: boolean; captured: boolean; leveledUp: boolean; evolution: EvolutionStep[] }> {
   const playerState = await tx.playerState.findUnique({ where: { userId } });
-  if (!playerState?.autoCaptureEnabled) return { attempted: false, captured: false };
+  if (!playerState?.autoCaptureEnabled) return { attempted: false, captured: false, leveledUp: false, evolution: [] };
 
   // Already at the species cap — don't waste balls on a capture that can never land. Shiny
   // and non-shiny each have their own separate slot(s), so a shiny doesn't compete with the
@@ -257,7 +260,7 @@ async function autoCaptureIfEnabled(
   const ownedCount = await tx.playerCreature.count({
     where: { userId, speciesKey: encounter.speciesKey, isShiny: encounter.isShiny },
   });
-  if (ownedCount >= speciesCap) return { attempted: true, captured: false };
+  if (ownedCount >= speciesCap) return { attempted: true, captured: false, leveledUp: false, evolution: [] };
 
   const ballsByCheapest = Object.values(POKEBALL_CATALOG).sort((a, b) => Number(a.goldCost - b.goldCost));
   let anyBallThrown = false;
@@ -297,7 +300,13 @@ async function autoCaptureIfEnabled(
         const goldGained = scaledGoldReward(encounter.level, bonuses) / 2n;
         const xpGained = Math.floor(scaledXpReward(encounter.level, bonuses) / 2);
         const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
-        if (activeCreature) await applyXpGain(tx, activeCreature, xpGained);
+        let leveledUp = false;
+        let evolution: EvolutionStep[] = [];
+        if (activeCreature) {
+          const xpResult = await applyXpGain(tx, activeCreature, xpGained);
+          leveledUp = xpResult.leveledUp;
+          evolution = xpResult.evolution;
+        }
         await tx.playerState.update({
           where: { userId },
           data: {
@@ -309,7 +318,7 @@ async function autoCaptureIfEnabled(
           },
         });
         await bumpQuestObjective(tx, userId, "capture_creature");
-        return { attempted: true, captured: true };
+        return { attempted: true, captured: true, leveledUp, evolution };
       }
     }
     if (inventory) {
@@ -320,7 +329,7 @@ async function autoCaptureIfEnabled(
     }
   }
 
-  return { attempted: anyBallThrown, captured: false };
+  return { attempted: anyBallThrown, captured: false, leveledUp: false, evolution: [] };
 }
 
 export async function getExplorationState(prisma: PrismaClient, userId: string): Promise<ExplorationStateResponse> {
@@ -409,6 +418,8 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   let canSwitch = false;
   let leagueCleared = false;
   let capturedShiny: { name: string; spriteFile: string } | null = null;
+  let leveledUp = false;
+  let evolution: EvolutionStep[] = [];
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -458,6 +469,8 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
           capturedShiny = { name: wildSpecies.name, spriteFile: wildSpecies.spriteFile };
         }
         if (autoCapture.captured) {
+          leveledUp = autoCapture.leveledUp;
+          evolution = autoCapture.evolution;
           await autoHealIfEnabled(tx, userId);
           await rerollOrClearEncounter(
             tx,
@@ -469,7 +482,9 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
         } else if (autoCapture.attempted) {
           // Auto-capture was on but never landed (or ran out of balls) — still auto-finish
           // so a fully AFK player isn't left stuck waiting on a defeated encounter forever.
-          await grantEncounterRewards(tx, userId, encounter.level, skillBonuses);
+          const rewards = await grantEncounterRewards(tx, userId, encounter.level, skillBonuses);
+          leveledUp = rewards.leveledUp;
+          evolution = rewards.evolution;
           await autoHealIfEnabled(tx, userId);
           await rerollOrClearEncounter(
             tx,
@@ -524,7 +539,7 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
   });
 
   const state = await buildExplorationState(prisma, userId);
-  return { state, damageDealt, damageTaken, victory, fainted, canSwitch, leagueCleared, capturedShiny };
+  return { state, damageDealt, damageTaken, victory, fainted, canSwitch, leagueCleared, capturedShiny, leveledUp, evolution };
 }
 
 export async function captureEncounter(
@@ -539,6 +554,7 @@ export async function captureEncounter(
   let createdCreatureId: string | null = null;
   let xpGained = 0;
   let leveledUp = false;
+  let evolution: EvolutionStep[] = [];
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -586,6 +602,7 @@ export async function captureEncounter(
       if (activeCreature) {
         const xpResult = await applyXpGain(tx, activeCreature, xpGained);
         leveledUp = xpResult.leveledUp;
+        evolution = xpResult.evolution;
       }
       await tx.playerState.update({
         where: { userId },
@@ -614,13 +631,14 @@ export async function captureEncounter(
   const creature = createdCreatureId
     ? buildCreatureView((await prisma.playerCreature.findUniqueOrThrow({ where: { id: createdCreatureId } })))
     : null;
-  return { success, state, creature, xpGained, leveledUp };
+  return { success, state, creature, xpGained, leveledUp, evolution };
 }
 
 export async function finishEncounter(prisma: PrismaClient, userId: string): Promise<FinishEncounterResponse> {
   let goldGained = 0n;
   let xpGained = 0;
   let leveledUp = false;
+  let evolution: EvolutionStep[] = [];
 
   await prisma.$transaction(async (tx) => {
     const lockedState = await lockPlayerState(tx, userId);
@@ -629,7 +647,12 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
     if (encounter.currentHp > 0) throw new EncounterNotDefeatedError();
 
     const skillBonuses = await getSkillTreeBonuses(tx, userId);
-    ({ goldGained, xpGained, leveledUp } = await grantEncounterRewards(tx, userId, encounter.level, skillBonuses));
+    ({ goldGained, xpGained, leveledUp, evolution } = await grantEncounterRewards(
+      tx,
+      userId,
+      encounter.level,
+      skillBonuses,
+    ));
 
     await autoHealIfEnabled(tx, userId);
     await rerollOrClearEncounter(
@@ -642,7 +665,7 @@ export async function finishEncounter(prisma: PrismaClient, userId: string): Pro
   });
 
   const state = await buildExplorationState(prisma, userId);
-  return { state, goldGained, xpGained, leveledUp };
+  return { state, goldGained, xpGained, leveledUp, evolution };
 }
 
 export async function fleeEncounter(prisma: PrismaClient, userId: string): Promise<ExplorationStateResponse> {

@@ -1,4 +1,5 @@
 import type { PlayerCreatureView, WildEncounterView } from "./creature.js";
+import type { EvolutionStep } from "../game/evolution.js";
 
 export interface ExplorationStateResponse {
   goldBalance: bigint;
@@ -28,6 +29,12 @@ export interface AttackResponse {
   /** Set when auto-capture just landed on a shiny — the client shows the same big reveal
    * as a manual shiny capture, so AFK/autoclicker farming can't silently skip past it. */
   capturedShiny: ShinyCaptureInfo | null;
+  /** True if the XP granted by this attack (via an auto-capture/auto-finish branch) leveled
+   * up the active creature. */
+  leveledUp: boolean;
+  /** Evolution step(s) the active creature's speciesKey just underwent, in order (usually
+   * one, but a big multi-level jump can cross two thresholds at once). Empty if none. */
+  evolution: EvolutionStep[];
 }
 
 export interface CaptureResponse {
@@ -36,6 +43,7 @@ export interface CaptureResponse {
   creature: PlayerCreatureView | null;
   xpGained: number;
   leveledUp: boolean;
+  evolution: EvolutionStep[];
 }
 
 export interface FinishEncounterResponse {
@@ -43,4 +51,5 @@ export interface FinishEncounterResponse {
   goldGained: bigint;
   xpGained: number;
   leveledUp: boolean;
+  evolution: EvolutionStep[];
 }

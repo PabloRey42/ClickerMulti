@@ -5,8 +5,10 @@ import {
   creatureMaxHp,
   creatureAttack,
   xpToNextLevel,
+  resolveEvolutionSteps,
   type PlayerCreatureView,
   type WildEncounterView,
+  type EvolutionStep,
 } from "@farm-clicker/shared";
 
 /** Row-locks PlayerState so concurrent battle actions from the same user can't race. */
@@ -51,6 +53,7 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     isActive: creature.isActive,
     isShiny: creature.isShiny,
     caughtAt: creature.caughtAt.toISOString(),
+    evolvedNow: [],
   };
 }
 
@@ -71,13 +74,16 @@ export function buildEncounterView(encounter: WildEncounter): WildEncounterView 
   };
 }
 
-/** Applies XP to a creature, rolling level-ups (and a full heal on each level gained).
- * Level never goes past MAX_LEVEL — once there, further XP is simply discarded. */
+/** Applies XP to a creature, rolling level-ups (and a full heal on each level gained), and
+ * evolves it (speciesKey change) as soon as the new level crosses its species' evolution
+ * threshold — a multi-level jump in one XP grant can cross more than one threshold in a row
+ * (`resolveEvolutionSteps` walks the whole chain), so the client gets every step to animate
+ * in sequence. Level never goes past MAX_LEVEL — once there, further XP is simply discarded. */
 export async function applyXpGain(
   tx: Prisma.TransactionClient,
   creature: PlayerCreature,
   xpGained: number,
-): Promise<{ leveledUp: boolean }> {
+): Promise<{ leveledUp: boolean; evolution: EvolutionStep[] }> {
   let xp = creature.xp + xpGained;
   let level = creature.level;
   while (level < MAX_LEVEL && xp >= xpToNextLevel(level)) {
@@ -90,9 +96,33 @@ export async function applyXpGain(
   }
 
   const leveledUp = level > creature.level;
-  const species = SPECIES_CATALOG[creature.speciesKey];
-  const currentHp = leveledUp ? creatureMaxHp(species.baseHp, level) : creature.currentHp;
+  const evolution = leveledUp ? resolveEvolutionSteps(creature.speciesKey, level) : [];
+  const speciesKey = evolution.length > 0 ? evolution[evolution.length - 1].toSpeciesKey : creature.speciesKey;
+  const finalSpecies = SPECIES_CATALOG[speciesKey];
+  const currentHp = leveledUp ? creatureMaxHp(finalSpecies.baseHp, level) : creature.currentHp;
 
-  await tx.playerCreature.update({ where: { id: creature.id }, data: { xp, level, currentHp } });
-  return { leveledUp };
+  await tx.playerCreature.update({ where: { id: creature.id }, data: { xp, level, currentHp, speciesKey } });
+  return { leveledUp, evolution };
+}
+
+/** Catches a creature up to whatever evolution its *current* level already qualifies for —
+ * covers creatures that reached a level before this feature existed (or before their
+ * species' evolution level was added), so a player logging back in still sees them evolve
+ * instead of silently sitting on an outdated speciesKey forever. No-op (empty array, no
+ * write) once a creature is already at the right speciesKey for its level — safe to call on
+ * every fetch. */
+export async function applyPendingEvolution(
+  tx: Prisma.TransactionClient,
+  creature: PlayerCreature,
+): Promise<{ creature: PlayerCreature; evolution: EvolutionStep[] }> {
+  const evolution = resolveEvolutionSteps(creature.speciesKey, creature.level);
+  if (evolution.length === 0) return { creature, evolution };
+
+  const speciesKey = evolution[evolution.length - 1].toSpeciesKey;
+  const finalSpecies = SPECIES_CATALOG[speciesKey];
+  const updated = await tx.playerCreature.update({
+    where: { id: creature.id },
+    data: { speciesKey, currentHp: creatureMaxHp(finalSpecies.baseHp, creature.level) },
+  });
+  return { creature: updated, evolution };
 }

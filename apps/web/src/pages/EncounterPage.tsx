@@ -14,6 +14,7 @@ import {
 import { listCreatures, activateCreature } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { useTeamStore } from "../state/teamStore";
+import { useEvolutionStore } from "../state/evolutionStore";
 import { TYPE_LABEL, typeIconSrc, creatureSpriteSrc } from "../theme/typeColors";
 import { playShinySound } from "../theme/shinySound";
 import { LeagueVictoryModal } from "../components/LeagueVictoryModal";
@@ -117,6 +118,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   const logout = useAuthStore((s) => s.logout);
   const { state, lastHit, hitCount, setState, applyAttack, clear } = useBattleStore();
   const refreshTeamSidebar = useTeamStore((s) => s.refresh);
+  const enqueueEvolutions = useEvolutionStore((s) => s.enqueue);
   const [pokeballs, setPokeballs] = useState<PokeballCatalogEntry[]>([]);
   const [team, setTeam] = useState<PlayerCreatureView[]>([]);
   const [acting, setActing] = useState(false);
@@ -166,6 +168,13 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
     if (leveledUp) setLevelUpKey((k) => k + 1);
   }
 
+  // Evolution always applies to the active creature server-side, so its post-action shiny
+  // flag (shininess itself never changes on evolution) is what the reveal should use.
+  function queueEvolutions(evolution: { fromSpeciesKey: string; toSpeciesKey: string }[], isShiny: boolean) {
+    if (evolution.length === 0) return;
+    enqueueEvolutions(evolution.map((step) => ({ step, isShiny })));
+  }
+
   async function handleAttack() {
     if (!accessToken || acting) return;
     setActing(true);
@@ -180,6 +189,8 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       } else if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
       }
+      triggerLevelUp(result.leveledUp);
+      queueEvolutions(result.evolution, result.state.activeCreature?.isShiny ?? false);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
@@ -212,6 +223,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
       setState(result.state);
       setMessage(`+${result.goldGained.toString()} or, +${result.xpGained} XP`);
       triggerLevelUp(result.leveledUp);
+      queueEvolutions(result.evolution, result.state.activeCreature?.isShiny ?? false);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
@@ -235,6 +247,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
         setMessage(result.success ? `${result.creature?.name} capturé !` : "Le Pokémon s'est échappé de la balle...");
       }
       triggerLevelUp(result.leveledUp);
+      queueEvolutions(result.evolution, result.state.activeCreature?.isShiny ?? false);
       await refreshTeamSidebar(accessToken);
     } catch (err) {
       if (err instanceof ApiError) {
