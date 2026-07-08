@@ -307,7 +307,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   swadloon: {
     key: "swadloon",
-    name: "Noeunoeuf",
+    name: "Couverdure",
     dexNumber: 541,
     types: ["insecte", "plante"],
     baseAttack: 20,
@@ -330,7 +330,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   galvantula: {
     key: "galvantula",
-    name: "Galvaran",
+    name: "Mygavolt",
     dexNumber: 596,
     types: ["insecte", "electrique"],
     baseAttack: 24,
@@ -353,7 +353,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   },
   manectric: {
     key: "manectric",
-    name: "Manectric",
+    name: "Élecsprint",
     dexNumber: 310,
     types: ["electrique"],
     baseAttack: 27,
@@ -381,9 +381,9 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   zigzagoon: { key: "zigzagoon", name: "Zigzaton", dexNumber: 263, types: ["normal"], baseAttack: 8, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 32, spriteFile: "zigzagoon.png", evolution: { intoKey: "linoone", level: 20 } },
   bidoof: { key: "bidoof", name: "Keunotor", dexNumber: 399, types: ["normal"], baseAttack: 6, baseHp: 28, baseCaptureRate: 0.55, rarityWeight: 28, spriteFile: "bidoof.png", evolution: { intoKey: "bibarel", level: 15 } },
   bibarel: { key: "bibarel", name: "Castorno", dexNumber: 400, types: ["normal", "eau"], baseAttack: 9, baseHp: 35, baseCaptureRate: 0.33, rarityWeight: 1, spriteFile: "bibarel.png" },
-  lillipup: { key: "lillipup", name: "Ratentif", dexNumber: 506, types: ["normal"], baseAttack: 9, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 20, spriteFile: "lillipup.png", evolution: { intoKey: "herdier", level: 16 } },
-  herdier: { key: "herdier", name: "Ferochien", dexNumber: 507, types: ["normal"], baseAttack: 14, baseHp: 30, baseCaptureRate: 0.3, rarityWeight: 1, spriteFile: "herdier.png", evolution: { intoKey: "stoutland", level: 32 } },
-  stoutland: { key: "stoutland", name: "Groenard", dexNumber: 508, types: ["normal"], baseAttack: 20, baseHp: 36, baseCaptureRate: 0.18, rarityWeight: 1, spriteFile: "stoutland.png" },
+  lillipup: { key: "lillipup", name: "Ponchiot", dexNumber: 506, types: ["normal"], baseAttack: 9, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 20, spriteFile: "lillipup.png", evolution: { intoKey: "herdier", level: 16 } },
+  herdier: { key: "herdier", name: "Ponchien", dexNumber: 507, types: ["normal"], baseAttack: 14, baseHp: 30, baseCaptureRate: 0.3, rarityWeight: 1, spriteFile: "herdier.png", evolution: { intoKey: "stoutland", level: 32 } },
+  stoutland: { key: "stoutland", name: "Mastouffe", dexNumber: 508, types: ["normal"], baseAttack: 20, baseHp: 36, baseCaptureRate: 0.18, rarityWeight: 1, spriteFile: "stoutland.png" },
   eevee: {
     key: "eevee",
     name: "Évoli",
@@ -415,7 +415,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   buneary: { key: "buneary", name: "Laporeille", dexNumber: 427, types: ["normal"], baseAttack: 11, baseHp: 28, baseCaptureRate: 0.4, rarityWeight: 1499, spriteFile: "buneary.png" },
 
   // --- Route 2 (plante, low-mid tier) ---
-  shroomish: { key: "shroomish", name: "Balbuto", dexNumber: 285, types: ["plante"], baseAttack: 9, baseHp: 30, baseCaptureRate: 0.45, rarityWeight: 32, spriteFile: "shroomish.png", evolution: { intoKey: "breloom", level: 23 } },
+  shroomish: { key: "shroomish", name: "Balignon", dexNumber: 285, types: ["plante"], baseAttack: 9, baseHp: 30, baseCaptureRate: 0.45, rarityWeight: 32, spriteFile: "shroomish.png", evolution: { intoKey: "breloom", level: 23 } },
   breloom: { key: "breloom", name: "Chapignon", dexNumber: 286, types: ["plante", "combat"], baseAttack: 14, baseHp: 38, baseCaptureRate: 0.27, rarityWeight: 1, spriteFile: "breloom.png" },
   budew: { key: "budew", name: "Rozbouton", dexNumber: 406, types: ["plante", "poison"], baseAttack: 8, baseHp: 26, baseCaptureRate: 0.45, rarityWeight: 26, spriteFile: "budew.png" },
   cottonee: { key: "cottonee", name: "Doudouvet", dexNumber: 546, types: ["plante", "fee"], baseAttack: 7, baseHp: 24, baseCaptureRate: 0.5, rarityWeight: 20, spriteFile: "cottonee.png", stoneEvolutions: [{ stoneKey: "pierre_soleil", intoKey: "whimsicott" }] },
@@ -424,12 +424,12 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   weepinbell: { key: "weepinbell", name: "Boustiflor", dexNumber: 70, types: ["plante", "poison"], baseAttack: 15, baseHp: 30, baseCaptureRate: 0.25, rarityWeight: 1, spriteFile: "weepinbell.png", stoneEvolutions: [{ stoneKey: "pierre_feuille", intoKey: "victreebel" }] },
   victreebel: { key: "victreebel", name: "Empiflor", dexNumber: 71, types: ["plante", "poison"], baseAttack: 22, baseHp: 38, baseCaptureRate: 0.15, rarityWeight: 1, spriteFile: "victreebel.png" },
   sunkern: { key: "sunkern", name: "Tournegrin", dexNumber: 191, types: ["plante"], baseAttack: 6, baseHp: 22, baseCaptureRate: 0.55, rarityWeight: 8, spriteFile: "sunkern.png", stoneEvolutions: [{ stoneKey: "pierre_soleil", intoKey: "sunflora" }] },
-  sunflora: { key: "sunflora", name: "Tournesol", dexNumber: 192, types: ["plante"], baseAttack: 11, baseHp: 30, baseCaptureRate: 0.35, rarityWeight: 1, spriteFile: "sunflora.png" },
+  sunflora: { key: "sunflora", name: "Héliatronc", dexNumber: 192, types: ["plante"], baseAttack: 11, baseHp: 30, baseCaptureRate: 0.35, rarityWeight: 1, spriteFile: "sunflora.png" },
 
   // --- Route 4 (eau, mid tier) ---
   poliwag: { key: "poliwag", name: "Ptitard", dexNumber: 60, types: ["eau"], baseAttack: 11, baseHp: 28, baseCaptureRate: 0.42, rarityWeight: 32, spriteFile: "poliwag.png", evolution: { intoKey: "poliwhirl", level: 25 } },
   poliwhirl: { key: "poliwhirl", name: "Têtarte", dexNumber: 61, types: ["eau"], baseAttack: 17, baseHp: 35, baseCaptureRate: 0.25, rarityWeight: 1, spriteFile: "poliwhirl.png", stoneEvolutions: [{ stoneKey: "pierre_eau", intoKey: "poliwrath" }] },
-  poliwrath: { key: "poliwrath", name: "Tarpaud", dexNumber: 62, types: ["eau", "combat"], baseAttack: 26, baseHp: 44, baseCaptureRate: 0.15, rarityWeight: 1, spriteFile: "poliwrath.png" },
+  poliwrath: { key: "poliwrath", name: "Tartard", dexNumber: 62, types: ["eau", "combat"], baseAttack: 26, baseHp: 44, baseCaptureRate: 0.15, rarityWeight: 1, spriteFile: "poliwrath.png" },
   psyduck: { key: "psyduck", name: "Psykokwak", dexNumber: 54, types: ["eau"], baseAttack: 12, baseHp: 30, baseCaptureRate: 0.4, rarityWeight: 26, spriteFile: "psyduck.png", evolution: { intoKey: "golduck", level: 33 } },
   golduck: { key: "golduck", name: "Akwakwak", dexNumber: 55, types: ["eau"], baseAttack: 18, baseHp: 38, baseCaptureRate: 0.24, rarityWeight: 1, spriteFile: "golduck.png" },
   horsea: { key: "horsea", name: "Hypotrempe", dexNumber: 116, types: ["eau"], baseAttack: 13, baseHp: 24, baseCaptureRate: 0.38, rarityWeight: 20, spriteFile: "horsea.png", evolution: { intoKey: "seadra", level: 32 } },
@@ -451,7 +451,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   swampert: { key: "swampert", name: "Laggron", dexNumber: 260, types: ["eau", "sol"], baseAttack: 25, baseHp: 46, baseCaptureRate: 0.11, rarityWeight: 1, spriteFile: "swampert.png" },
   piplup: { key: "piplup", name: "Tiplouf", dexNumber: 393, types: ["eau"], baseAttack: 11, baseHp: 28, baseCaptureRate: 0.32, rarityWeight: 14, spriteFile: "piplup.png", evolution: { intoKey: "prinplup", level: 16 } },
   prinplup: { key: "prinplup", name: "Prinplouf", dexNumber: 394, types: ["eau"], baseAttack: 17, baseHp: 35, baseCaptureRate: 0.19, rarityWeight: 1, spriteFile: "prinplup.png", evolution: { intoKey: "empoleon", level: 36 } },
-  empoleon: { key: "empoleon", name: "Émiplouf", dexNumber: 395, types: ["eau", "acier"], baseAttack: 24, baseHp: 42, baseCaptureRate: 0.11, rarityWeight: 1, spriteFile: "empoleon.png" },
+  empoleon: { key: "empoleon", name: "Pingoléon", dexNumber: 395, types: ["eau", "acier"], baseAttack: 24, baseHp: 42, baseCaptureRate: 0.11, rarityWeight: 1, spriteFile: "empoleon.png" },
   magikarp: { key: "magikarp", name: "Magicarpe", dexNumber: 129, types: ["eau"], baseAttack: 4, baseHp: 20, baseCaptureRate: 0.6, rarityWeight: 40, spriteFile: "magikarp.png", evolution: { intoKey: "gyarados", level: 20 } },
   gyarados: { key: "gyarados", name: "Léviator", dexNumber: 130, types: ["eau", "vol"], baseAttack: 35, baseHp: 55, baseCaptureRate: 0.15, rarityWeight: 1, spriteFile: "gyarados.png" },
 
@@ -482,14 +482,14 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   voltorb: { key: "voltorb", name: "Voltorbe", dexNumber: 100, types: ["electrique"], baseAttack: 11, baseHp: 22, baseCaptureRate: 0.4, rarityWeight: 24, spriteFile: "voltorb.png", evolution: { intoKey: "electrode", level: 30 } },
   electrode: { key: "electrode", name: "Électrode", dexNumber: 101, types: ["electrique"], baseAttack: 17, baseHp: 28, baseCaptureRate: 0.24, rarityWeight: 1, spriteFile: "electrode.png" },
   mareep: { key: "mareep", name: "Wattouat", dexNumber: 179, types: ["electrique"], baseAttack: 10, baseHp: 26, baseCaptureRate: 0.42, rarityWeight: 20, spriteFile: "mareep.png", evolution: { intoKey: "flaaffy", level: 15 } },
-  flaaffy: { key: "flaaffy", name: "Moumouton", dexNumber: 180, types: ["electrique"], baseAttack: 15, baseHp: 33, baseCaptureRate: 0.25, rarityWeight: 1, spriteFile: "flaaffy.png", evolution: { intoKey: "ampharos", level: 30 } },
-  shinx: { key: "shinx", name: "Vasire", dexNumber: 403, types: ["electrique"], baseAttack: 13, baseHp: 24, baseCaptureRate: 0.35, rarityWeight: 14, spriteFile: "shinx.png", evolution: { intoKey: "luxio", level: 15 } },
+  flaaffy: { key: "flaaffy", name: "Lainergie", dexNumber: 180, types: ["electrique"], baseAttack: 15, baseHp: 33, baseCaptureRate: 0.25, rarityWeight: 1, spriteFile: "flaaffy.png", evolution: { intoKey: "ampharos", level: 30 } },
+  shinx: { key: "shinx", name: "Lixy", dexNumber: 403, types: ["electrique"], baseAttack: 13, baseHp: 24, baseCaptureRate: 0.35, rarityWeight: 14, spriteFile: "shinx.png", evolution: { intoKey: "luxio", level: 15 } },
   luxio: { key: "luxio", name: "Luxio", dexNumber: 404, types: ["electrique"], baseAttack: 20, baseHp: 30, baseCaptureRate: 0.21, rarityWeight: 1, spriteFile: "luxio.png", evolution: { intoKey: "luxray", level: 30 } },
 
   // --- Route 9 (electrique, highest tier — evolved forms) ---
   raichu: { key: "raichu", name: "Raichu", dexNumber: 26, types: ["electrique"], baseAttack: 26, baseHp: 38, baseCaptureRate: 0.18, rarityWeight: 24, spriteFile: "raichu.png" },
   magnezone: { key: "magnezone", name: "Magnézone", dexNumber: 462, types: ["electrique", "acier"], baseAttack: 25, baseHp: 40, baseCaptureRate: 0.18, rarityWeight: 20, spriteFile: "magnezone.png" },
   electivire: { key: "electivire", name: "Élekable", dexNumber: 466, types: ["electrique"], baseAttack: 27, baseHp: 42, baseCaptureRate: 0.16, rarityWeight: 16, spriteFile: "electivire.png" },
-  ampharos: { key: "ampharos", name: "Ampharos", dexNumber: 181, types: ["electrique"], baseAttack: 24, baseHp: 46, baseCaptureRate: 0.2, rarityWeight: 12, spriteFile: "ampharos.png" },
+  ampharos: { key: "ampharos", name: "Pharamp", dexNumber: 181, types: ["electrique"], baseAttack: 24, baseHp: 46, baseCaptureRate: 0.2, rarityWeight: 12, spriteFile: "ampharos.png" },
   luxray: { key: "luxray", name: "Luxray", dexNumber: 405, types: ["electrique"], baseAttack: 26, baseHp: 36, baseCaptureRate: 0.18, rarityWeight: 8, spriteFile: "luxray.png" },
 };
