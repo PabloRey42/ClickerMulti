@@ -35,7 +35,9 @@ export const AURORA_CITY_MAP: CityMapConfig = {
         { speciesKey: "voltorb", minLevel: 8, maxLevel: 12, rarityWeight: 24, captureRate: 0.4 },
         { speciesKey: "mareep", minLevel: 8, maxLevel: 12, rarityWeight: 20, captureRate: 0.42 },
         { speciesKey: "shinx", minLevel: 8, maxLevel: 12, rarityWeight: 14, captureRate: 0.35 },
+        { speciesKey: "moucheron-foudre", minLevel: 8, maxLevel: 12, rarityWeight: 12, captureRate: 0.25 },
         { speciesKey: "pikachu", minLevel: 8, maxLevel: 12, rarityWeight: 10, captureRate: 0.3 },
+        { speciesKey: "goupil-etincelle", minLevel: 8, maxLevel: 12, rarityWeight: 8, captureRate: 0.2 },
       ],
       shape: { xPercent: 33, yPercent: 15, radiusPercent: 3 },
     },
@@ -47,6 +49,7 @@ export const AURORA_CITY_MAP: CityMapConfig = {
       encounterTable: [
         { speciesKey: "growlithe", minLevel: 9, maxLevel: 13, rarityWeight: 30, captureRate: 0.35 },
         { speciesKey: "cyndaquil", minLevel: 9, maxLevel: 13, rarityWeight: 22, captureRate: 0.3 },
+        { speciesKey: "renardeau", minLevel: 9, maxLevel: 13, rarityWeight: 20, captureRate: 0.3 },
         { speciesKey: "torchic", minLevel: 9, maxLevel: 13, rarityWeight: 18, captureRate: 0.3 },
         { speciesKey: "chimchar", minLevel: 9, maxLevel: 13, rarityWeight: 14, captureRate: 0.3 },
         { speciesKey: "numel", minLevel: 9, maxLevel: 13, rarityWeight: 8, captureRate: 0.4 },
@@ -60,6 +63,7 @@ export const AURORA_CITY_MAP: CityMapConfig = {
       elementalType: "eau",
       encounterTable: [
         { speciesKey: "magikarp", minLevel: 8, maxLevel: 12, rarityWeight: 40, captureRate: 0.6 },
+        { speciesKey: "loutre", minLevel: 8, maxLevel: 12, rarityWeight: 30, captureRate: 0.4 },
         { speciesKey: "squirtle", minLevel: 8, maxLevel: 12, rarityWeight: 26, captureRate: 0.35 },
         { speciesKey: "totodile", minLevel: 8, maxLevel: 12, rarityWeight: 22, captureRate: 0.32 },
         { speciesKey: "mudkip", minLevel: 8, maxLevel: 12, rarityWeight: 18, captureRate: 0.32 },
@@ -83,6 +87,8 @@ export const AURORA_CITY_MAP: CityMapConfig = {
       name: "Route 1",
       elementalType: "normal",
       encounterTable: [
+        { speciesKey: "moineau", minLevel: 1, maxLevel: 2, rarityWeight: 50, captureRate: 0.5 },
+        { speciesKey: "ecureuil", minLevel: 1, maxLevel: 2, rarityWeight: 40, captureRate: 0.45 },
         { speciesKey: "rattata", minLevel: 1, maxLevel: 2, rarityWeight: 40, captureRate: 0.55 },
         { speciesKey: "zigzagoon", minLevel: 1, maxLevel: 2, rarityWeight: 32, captureRate: 0.5 },
         { speciesKey: "bidoof", minLevel: 1, maxLevel: 2, rarityWeight: 28, captureRate: 0.55 },
@@ -99,6 +105,7 @@ export const AURORA_CITY_MAP: CityMapConfig = {
       encounterTable: [
         { speciesKey: "shroomish", minLevel: 3, maxLevel: 5, rarityWeight: 32, captureRate: 0.45 },
         { speciesKey: "budew", minLevel: 3, maxLevel: 5, rarityWeight: 26, captureRate: 0.45 },
+        { speciesKey: "scarabee", minLevel: 3, maxLevel: 5, rarityWeight: 22, captureRate: 0.32 },
         { speciesKey: "cottonee", minLevel: 3, maxLevel: 5, rarityWeight: 20, captureRate: 0.5 },
         { speciesKey: "bellsprout", minLevel: 3, maxLevel: 5, rarityWeight: 14, captureRate: 0.42 },
         { speciesKey: "sunkern", minLevel: 3, maxLevel: 5, rarityWeight: 8, captureRate: 0.55 },
