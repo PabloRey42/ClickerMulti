@@ -87,6 +87,13 @@ model PlayerCreature {
   isShiny        Boolean         @default(false)
   caughtAt       DateTime        @default(now())
   marketListings MarketListing[]
+  /// The speciesKey this creature evolved FROM, set whenever a level-based evolution catch-up
+  /// (applyPendingEvolution) fires and left null/cleared once the client has actually shown
+  /// the reveal animation for it (POST /creatures/:id/ack-evolution). Durable on purpose: the
+  /// old design derived "just evolved" purely from a single listCreatures response, which a
+  /// concurrent/earlier fetch (another tab, a stale session) could silently consume before the
+  /// player ever saw the animation — this column survives across requests until acknowledged.
+  pendingEvolutionFrom String?
 
   @@index([userId])
 }

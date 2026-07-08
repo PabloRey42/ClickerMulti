@@ -17,7 +17,7 @@ import { RouteEncounterSidebar } from "./components/RouteEncounterSidebar";
 import { ActiveQuestTracker } from "./components/ActiveQuestTracker";
 import { InventoryPanel } from "./components/InventoryPanel";
 import { EvolutionAnimation } from "./components/EvolutionAnimation";
-import { listCreatures } from "./api/creatures";
+import { listCreatures, ackEvolutionReveal } from "./api/creatures";
 import { ApiError } from "./api/client";
 import { useEvolutionStore } from "./state/evolutionStore";
 
@@ -107,12 +107,14 @@ export function App() {
       .then((creatures) => {
         setHasCreature(creatures.length > 0);
         // Catches players up on any evolution their creatures already qualified for before
-        // this feature existed (or before their species got an evolution level added) — this
-        // is the one place guaranteed to run before TeamSidebar's own listCreatures call, so
-        // it's the only call site that ever surfaces retroactive evolvedNow data; see
-        // creatures.service.ts's listCreatures and evolutionStore.ts.
+        // this feature existed (or before their species got an evolution level added).
+        // evolvedNow is derived server-side from a durable pendingEvolutionFrom column (not
+        // a one-shot per-request flag), so it keeps showing up here across reloads/sessions
+        // until handleEvolutionDone below acks it — this is only the one call site that
+        // *enqueues* it (other listCreatures callers like TeamSidebar just ignore the field),
+        // to avoid queuing the same reveal twice.
         const retroactive = creatures.flatMap((c) =>
-          c.evolvedNow.map((step) => ({ step, isShiny: c.isShiny })),
+          c.evolvedNow.map((step) => ({ step, isShiny: c.isShiny, creatureId: c.id })),
         );
         if (retroactive.length > 0) enqueueEvolutions(retroactive);
       })
@@ -120,6 +122,19 @@ export function App() {
         if (err instanceof ApiError && err.status === 401) logout();
       });
   }, [accessToken, logout, enqueueEvolutions]);
+
+  function handleEvolutionDone() {
+    const current = evolutionQueue[0];
+    dequeueEvolution();
+    // Only retroactive entries carry a creatureId (see evolutionStore.ts) — live battle/
+    // stone evolutions have nothing server-side to ack, they were never persisted as pending.
+    if (current?.creatureId && accessToken) {
+      ackEvolutionReveal(accessToken, current.creatureId).catch(() => {
+        // Best-effort: worst case the same reveal shows again on a future login, which is
+        // still strictly better than the old behavior of silently never showing it at all.
+      });
+    }
+  }
 
   if (!user) return <LoginPage />;
 
@@ -222,7 +237,7 @@ export function App() {
           key={evolutionQueue[0].queuedAt}
           step={evolutionQueue[0].step}
           isShiny={evolutionQueue[0].isShiny}
-          onDone={dequeueEvolution}
+          onDone={handleEvolutionDone}
         />
       )}
     </GameShell>

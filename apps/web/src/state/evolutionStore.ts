@@ -4,6 +4,11 @@ import type { EvolutionStep } from "@farm-clicker/shared";
 export interface QueuedEvolution {
   step: EvolutionStep;
   isShiny: boolean;
+  /** Only set for retroactive (login catch-up) entries — App.tsx uses this to call
+   * ackEvolutionReveal once the animation for this entry finishes, so the server stops
+   * re-reporting it. Live battle/stone evolutions don't carry one; nothing to ack for those,
+   * they're shown once, synchronously, in the response that caused them. */
+  creatureId?: string;
   /** Distinguishes queue entries with the same step/shininess (e.g. two creatures of the
    * same species evolving in the same retroactive batch) so React keys stay unique. */
   queuedAt: number;
@@ -11,7 +16,7 @@ export interface QueuedEvolution {
 
 interface EvolutionQueueState {
   queue: QueuedEvolution[];
-  enqueue: (items: { step: EvolutionStep; isShiny: boolean }[]) => void;
+  enqueue: (items: { step: EvolutionStep; isShiny: boolean; creatureId?: string }[]) => void;
   dequeue: () => void;
 }
 

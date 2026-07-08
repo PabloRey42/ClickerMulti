@@ -46,3 +46,12 @@ export function useEvolutionStone(accessToken: string, creatureId: string, stone
     body: { stoneKey },
   });
 }
+
+/** Fired once the client has actually shown a retroactive evolution reveal, so it stops
+ * being reported by listCreatures. Best-effort — see ackEvolutionReveal's server doc. */
+export function ackEvolutionReveal(accessToken: string, creatureId: string) {
+  return apiRequest<void>(`/api/creatures/${creatureId}/ack-evolution`, {
+    method: "POST",
+    accessToken,
+  });
+}

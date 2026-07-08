@@ -64,7 +64,13 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     isActive: creature.isActive,
     isShiny: creature.isShiny,
     caughtAt: creature.caughtAt.toISOString(),
-    evolvedNow: [],
+    // Derived from the durable pendingEvolutionFrom column (not a per-call result) so a
+    // reveal the client hasn't acknowledged yet (POST /creatures/:id/ack-evolution) keeps
+    // showing up on every fetch — including ones from a different tab or a later session —
+    // until it's actually been shown. See the column's doc comment in schema.prisma.
+    evolvedNow: creature.pendingEvolutionFrom
+      ? [{ fromSpeciesKey: creature.pendingEvolutionFrom, toSpeciesKey: creature.speciesKey }]
+      : [],
   };
 }
 
@@ -119,9 +125,14 @@ export async function applyXpGain(
 /** Catches a creature up to whatever evolution its *current* level already qualifies for —
  * covers creatures that reached a level before this feature existed (or before their
  * species' evolution level was added), so a player logging back in still sees them evolve
- * instead of silently sitting on an outdated speciesKey forever. No-op (empty array, no
- * write) once a creature is already at the right speciesKey for its level — safe to call on
- * every fetch. */
+ * instead of silently sitting on an outdated speciesKey forever. No-op (no write) once a
+ * creature is already at the right speciesKey for its level — safe to call on every fetch.
+ *
+ * Sets `pendingEvolutionFrom` to the creature's original (pre-catch-up) speciesKey rather
+ * than clearing it here — this mutation only needs to run once (the DB is now correct), but
+ * the *reveal* still needs to survive until the client actually shows it (see
+ * `buildCreatureView`/ack-evolution). Preserves an already-set `pendingEvolutionFrom` instead
+ * of overwriting it, in the unlikely case this ever needed to run twice before being acked. */
 export async function applyPendingEvolution(
   tx: Prisma.TransactionClient,
   creature: PlayerCreature,
@@ -133,7 +144,19 @@ export async function applyPendingEvolution(
   const finalSpecies = SPECIES_CATALOG[speciesKey];
   const updated = await tx.playerCreature.update({
     where: { id: creature.id },
-    data: { speciesKey, currentHp: creatureMaxHp(finalSpecies.baseHp, creature.level) },
+    data: {
+      speciesKey,
+      currentHp: creatureMaxHp(finalSpecies.baseHp, creature.level),
+      pendingEvolutionFrom: creature.pendingEvolutionFrom ?? creature.speciesKey,
+    },
   });
   return { creature: updated, evolution };
+}
+
+/** Clears the durable reveal flag once the client has actually shown the animation for it. */
+export async function ackEvolutionReveal(tx: Prisma.TransactionClient, userId: string, creatureId: string) {
+  await tx.playerCreature.updateMany({
+    where: { id: creatureId, userId },
+    data: { pendingEvolutionFrom: null },
+  });
 }

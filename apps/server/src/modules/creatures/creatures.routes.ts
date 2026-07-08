@@ -9,6 +9,7 @@ import {
   getStarterOptions,
   chooseStarter,
   useEvolutionStone,
+  ackEvolutionReveal,
   CreatureNotFoundError,
   CreatureFaintedError,
   CreatureNotOnTeamError,
@@ -112,6 +113,19 @@ export default async function creaturesRoutes(fastify: FastifyInstance) {
         if (err instanceof InsufficientStonesError) return reply.code(409).send({ error: "insufficient_stones" });
         throw err;
       }
+    },
+  );
+
+  fastify.post(
+    "/creatures/:id/ack-evolution",
+    { preHandler: fastify.authenticate },
+    async (request, reply) => {
+      const parsed = creatureParamsSchema.safeParse(request.params);
+      if (!parsed.success) return reply.code(400).send({ error: "invalid_params" });
+
+      const { sub: userId } = request.user;
+      await ackEvolutionReveal(fastify.prisma, userId, parsed.data.id);
+      reply.code(204).send();
     },
   );
 }

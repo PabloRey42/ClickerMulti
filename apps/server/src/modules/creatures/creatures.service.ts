@@ -10,7 +10,12 @@ import {
   type SpeciesView,
   type UseStoneResponse,
 } from "@farm-clicker/shared";
-import { buildCreatureView, applyPendingEvolution, lockInventoryItem } from "../../lib/battle-db.js";
+import {
+  buildCreatureView,
+  applyPendingEvolution,
+  lockInventoryItem,
+  ackEvolutionReveal as ackEvolutionRevealTx,
+} from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
 
 export class CreatureNotFoundError extends Error {}
@@ -71,9 +76,11 @@ export async function listCreatures(prisma: PrismaClient, userId: string): Promi
   for (const creature of creatures) {
     // Retroactively catches up any creature whose level already qualifies for an evolution
     // it never went through (e.g. it reached that level before this feature shipped) — see
-    // applyPendingEvolution's doc comment. Cheap no-op for the common case.
-    const { creature: resolved, evolution } = await applyPendingEvolution(prisma, creature);
-    views.push({ ...buildCreatureView(resolved), evolvedNow: evolution });
+    // applyPendingEvolution's doc comment. Cheap no-op for the common case. buildCreatureView
+    // derives evolvedNow from the durable pendingEvolutionFrom column, not from this call's
+    // own result, so the reveal keeps surfacing on every fetch until it's acknowledged.
+    const { creature: resolved } = await applyPendingEvolution(prisma, creature);
+    views.push(buildCreatureView(resolved));
   }
   return views;
 }
@@ -197,4 +204,13 @@ export async function useEvolutionStone(
       evolution: [{ fromSpeciesKey: creature.speciesKey, toSpeciesKey: targetKey }],
     };
   });
+}
+
+/** Called by the client once it has actually displayed a retroactive evolution reveal
+ * (queued from `listCreatures`'s `evolvedNow`) — clears `pendingEvolutionFrom` so it stops
+ * being reported on future fetches. Silently no-ops on an unknown/already-cleared creature
+ * id rather than erroring — the client fires this best-effort right after the animation, and
+ * there's nothing meaningful to recover from if it's already gone. */
+export async function ackEvolutionReveal(prisma: PrismaClient, userId: string, creatureId: string): Promise<void> {
+  await ackEvolutionRevealTx(prisma, userId, creatureId);
 }
