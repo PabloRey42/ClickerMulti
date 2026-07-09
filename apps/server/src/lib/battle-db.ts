@@ -8,6 +8,7 @@ import {
   creatureAttack,
   xpToNextLevel,
   resolveEvolutionSteps,
+  resolveEvolutionPath,
   type PlayerCreatureView,
   type WildEncounterView,
   type EvolutionStep,
@@ -171,8 +172,10 @@ export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView 
     // reveal the client hasn't acknowledged yet (POST /creatures/:id/ack-evolution) keeps
     // showing up on every fetch — including ones from a different tab or a later session —
     // until it's actually been shown. See the column's doc comment in schema.prisma.
+    // resolveEvolutionPath walks the whole chain so a creature that caught up several stages at
+    // once (e.g. base→final) animates each intermediate step, not a single base→final jump.
     evolvedNow: creature.pendingEvolutionFrom
-      ? [{ fromSpeciesKey: creature.pendingEvolutionFrom, toSpeciesKey: creature.speciesKey }]
+      ? resolveEvolutionPath(creature.pendingEvolutionFrom, creature.speciesKey)
       : [],
   };
 }
