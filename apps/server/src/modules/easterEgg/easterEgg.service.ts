@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { SPECIES_CATALOG, MAX_TEAM_SIZE, creatureMaxHp, type PlayerCreatureView } from "@farm-clicker/shared";
-import { buildCreatureView } from "../../lib/battle-db.js";
+import { buildCreatureView, renumberTeamSlots } from "../../lib/battle-db.js";
 
 export class DynavoltAlreadyClaimedError extends Error {}
 
@@ -20,7 +20,7 @@ export async function claimDynavoltEasterEgg(prisma: PrismaClient, userId: strin
     await tx.playerState.update({ where: { userId }, data: { hasDynavoltEasterEgg: true } });
 
     const teamCount = await tx.playerCreature.count({ where: { userId, isOnTeam: true } });
-    return tx.playerCreature.create({
+    const created = await tx.playerCreature.create({
       data: {
         userId,
         speciesKey: DYNAVOLT_SPECIES_KEY,
@@ -29,6 +29,8 @@ export async function claimDynavoltEasterEgg(prisma: PrismaClient, userId: strin
         isOnTeam: teamCount < MAX_TEAM_SIZE,
       },
     });
+    await renumberTeamSlots(tx, userId);
+    return created;
   });
 
   return buildCreatureView(creature);

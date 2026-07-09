@@ -40,6 +40,7 @@ import {
   buildCreatureView,
   buildEncounterView,
   applyXpGain,
+  renumberTeamSlots,
 } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
 
@@ -297,6 +298,7 @@ async function autoCaptureIfEnabled(
             isShiny: encounter.isShiny,
           },
         });
+        await renumberTeamSlots(tx, userId);
         const goldGained = scaledGoldReward(encounter.level, bonuses) / 2n;
         const xpGained = Math.floor(scaledXpReward(encounter.level, bonuses) / 2);
         const activeCreature = await tx.playerCreature.findFirst({ where: { userId, isActive: true } });
@@ -595,6 +597,7 @@ export async function captureEncounter(
         },
       });
       createdCreatureId = created.id;
+      await renumberTeamSlots(tx, userId);
 
       const goldGained = scaledGoldReward(encounter.level, skillBonuses) / 2n;
       xpGained = Math.floor(scaledXpReward(encounter.level, skillBonuses) / 2);

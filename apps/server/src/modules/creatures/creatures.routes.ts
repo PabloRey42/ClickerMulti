@@ -6,6 +6,7 @@ import {
   activateCreature,
   setTeamMembership,
   clearTeamExceptActive,
+  reorderTeam,
   getStarterOptions,
   chooseStarter,
   useEvolutionStone,
@@ -19,12 +20,14 @@ import {
   InvalidStoneError,
   NoStoneEvolutionError,
   InsufficientStonesError,
+  InvalidTeamOrderError,
 } from "./creatures.service.js";
 
 const creatureParamsSchema = z.object({ id: z.string().min(1) });
 const chooseStarterSchema = z.object({ speciesKey: z.string().min(1) });
 const teamBodySchema = z.object({ onTeam: z.boolean() });
 const useStoneSchema = z.object({ stoneKey: z.string().min(1) });
+const reorderTeamSchema = z.object({ creatureIds: z.array(z.string().min(1)).min(1) });
 
 export default async function creaturesRoutes(fastify: FastifyInstance) {
   fastify.get("/creatures", { preHandler: fastify.authenticate }, async (request, reply) => {
@@ -93,6 +96,19 @@ export default async function creaturesRoutes(fastify: FastifyInstance) {
   fastify.post("/creatures/team/clear", { preHandler: fastify.authenticate }, async (request, reply) => {
     const { sub: userId } = request.user;
     sendJson(reply, await clearTeamExceptActive(fastify.prisma, userId));
+  });
+
+  fastify.post("/creatures/team/reorder", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const body = reorderTeamSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    const { sub: userId } = request.user;
+    try {
+      sendJson(reply, await reorderTeam(fastify.prisma, userId, body.data.creatureIds));
+    } catch (err) {
+      if (err instanceof InvalidTeamOrderError) return reply.code(400).send({ error: "invalid_team_order" });
+      throw err;
+    }
   });
 
   fastify.post(

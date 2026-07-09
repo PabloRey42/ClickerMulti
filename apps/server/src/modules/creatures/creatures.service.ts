@@ -14,6 +14,7 @@ import {
   buildCreatureView,
   applyPendingEvolution,
   lockInventoryItem,
+  renumberTeamSlots,
   ackEvolutionReveal as ackEvolutionRevealTx,
 } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
@@ -27,6 +28,7 @@ export class StarterAlreadyChosenError extends Error {}
 export class InvalidStoneError extends Error {}
 export class NoStoneEvolutionError extends Error {}
 export class InsufficientStonesError extends Error {}
+export class InvalidTeamOrderError extends Error {}
 
 export function getStarterOptions(): SpeciesView[] {
   return STARTER_SPECIES_KEYS.map((key) => {
@@ -62,6 +64,7 @@ export async function chooseStarter(
         currentHp: creatureMaxHp(species.baseHp, 1),
         isOnTeam: true,
         isActive: true,
+        teamSlot: 0,
       },
     });
     return buildCreatureView(created);
@@ -70,7 +73,10 @@ export async function chooseStarter(
 
 export async function listCreatures(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
   await bumpQuestObjective(prisma, userId, "open_collection");
-  const creatures = await prisma.playerCreature.findMany({ where: { userId }, orderBy: { caughtAt: "asc" } });
+  const creatures = await prisma.playerCreature.findMany({
+    where: { userId },
+    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+  });
 
   const views: PlayerCreatureView[] = [];
   for (const creature of creatures) {
@@ -117,14 +123,14 @@ export async function setTeamMembership(
     if (onTeam && !target.isOnTeam) {
       const teamCount = await tx.playerCreature.count({ where: { userId, isOnTeam: true } });
       if (teamCount >= MAX_TEAM_SIZE) throw new TeamFullError();
-      await tx.playerCreature.update({ where: { id: creatureId }, data: { isOnTeam: true } });
+      await tx.playerCreature.update({ where: { id: creatureId }, data: { isOnTeam: true, teamSlot: teamCount } });
       return;
     }
 
     if (!onTeam && target.isOnTeam) {
       await tx.playerCreature.update({
         where: { id: creatureId },
-        data: { isOnTeam: false, isActive: false },
+        data: { isOnTeam: false, isActive: false, teamSlot: null },
       });
 
       if (target.isActive) {
@@ -135,6 +141,8 @@ export async function setTeamMembership(
           await tx.playerCreature.update({ where: { id: replacement.id }, data: { isActive: true } });
         }
       }
+
+      await renumberTeamSlots(tx, userId);
     }
   });
 
@@ -157,8 +165,40 @@ export async function clearTeamExceptActive(prisma: PrismaClient, userId: string
 
     await tx.playerCreature.updateMany({
       where: { userId, isOnTeam: true, id: { not: active.id } },
-      data: { isOnTeam: false, isActive: false },
+      data: { isOnTeam: false, isActive: false, teamSlot: null },
     });
+    await tx.playerCreature.update({ where: { id: active.id }, data: { teamSlot: 0 } });
+  });
+
+  return listCreatures(prisma, userId);
+}
+
+/** Persists a client-driven drag-and-drop reorder of the team sidebar. Whoever ends up on
+ * top (index 0) becomes the active creature — that's the sidebar's whole rule, so this is
+ * now the only way to change who's active outside of a mid-battle switch (activateCreature),
+ * which intentionally doesn't touch team order. */
+export async function reorderTeam(
+  prisma: PrismaClient,
+  userId: string,
+  orderedCreatureIds: string[],
+): Promise<PlayerCreatureView[]> {
+  await prisma.$transaction(async (tx) => {
+    const team = await tx.playerCreature.findMany({ where: { userId, isOnTeam: true } });
+    const teamIds = new Set(team.map((c) => c.id));
+    const uniqueOrderedIds = new Set(orderedCreatureIds);
+    if (
+      orderedCreatureIds.length !== team.length ||
+      uniqueOrderedIds.size !== team.length ||
+      orderedCreatureIds.some((id) => !teamIds.has(id))
+    ) {
+      throw new InvalidTeamOrderError();
+    }
+
+    await Promise.all(
+      orderedCreatureIds.map((id, index) =>
+        tx.playerCreature.update({ where: { id }, data: { teamSlot: index, isActive: index === 0 } }),
+      ),
+    );
   });
 
   return listCreatures(prisma, userId);

@@ -39,6 +39,16 @@ export function clearTeam(accessToken: string) {
   });
 }
 
+/** Persists a drag-and-drop reorder of the team sidebar — `creatureIds` is the full team,
+ * front-to-back. Whoever ends up first becomes the active creature server-side. */
+export function reorderTeam(accessToken: string, creatureIds: string[]) {
+  return apiRequest<PlayerCreatureView[]>("/api/creatures/team/reorder", {
+    method: "POST",
+    accessToken,
+    body: { creatureIds },
+  });
+}
+
 export function useEvolutionStone(accessToken: string, creatureId: string, stoneKey: string) {
   return apiRequest<UseStoneResponse>(`/api/creatures/${creatureId}/use-stone`, {
     method: "POST",

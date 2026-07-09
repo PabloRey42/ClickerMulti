@@ -3,7 +3,7 @@ import { SPECIES_CATALOG, STONE_CATALOG, type PlayerCreatureView } from "@farm-c
 import { useAuthStore } from "../state/authStore";
 import { useTeamStore } from "../state/teamStore";
 import { useEvolutionStore } from "../state/evolutionStore";
-import { listCreatures, activateCreature, setTeamMembership, clearTeam, useEvolutionStone } from "../api/creatures";
+import { listCreatures, setTeamMembership, clearTeam, useEvolutionStone } from "../api/creatures";
 import { getShopCatalog } from "../api/shop";
 import { ApiError } from "../api/client";
 import {
@@ -134,21 +134,6 @@ export function CollectionPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return logout();
       if (err instanceof ApiError && err.status === 409) setError("Ton équipe est déjà complète (6 max).");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handleActivate(creature: PlayerCreatureView) {
-    if (!accessToken || busyId) return;
-    setBusyId(creature.id);
-    setError(null);
-    try {
-      await activateCreature(accessToken, creature.id);
-      await refresh();
-      await refreshTeamSidebar(accessToken);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) logout();
     } finally {
       setBusyId(null);
     }
@@ -291,19 +276,6 @@ export function CollectionPage() {
                             >
                               {c.isOnTeam ? "Retirer" : "Ajouter"}
                             </button>
-                            <button
-                              type="button"
-                              disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
-                              onClick={() => handleActivate(c)}
-                              className={[
-                                "rounded-lg px-2 py-1 text-[10px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
-                                c.isActive
-                                  ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
-                                  : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
-                              ].join(" ")}
-                            >
-                              Actif
-                            </button>
                           </div>
                         </div>
                         <StoneEvolutionButtons
@@ -404,19 +376,6 @@ export function CollectionPage() {
                       className="rounded-lg bg-stat-xp px-3 py-1.5 text-[11px] font-extrabold text-panel-foreground shadow transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                     >
                       {c.isOnTeam ? "Retirer" : "Ajouter"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyId === c.id || !c.isOnTeam || c.currentHp <= 0 || c.isActive}
-                      onClick={() => handleActivate(c)}
-                      className={[
-                        "rounded-lg px-3 py-1.5 text-[11px] font-extrabold shadow transition-transform hover:scale-105 active:scale-95 disabled:hover:scale-100",
-                        c.isActive
-                          ? "cursor-default bg-stat-xp/40 text-panel-foreground/60"
-                          : "bg-gold text-panel hover:bg-gold-light disabled:opacity-50",
-                      ].join(" ")}
-                    >
-                      Actif
                     </button>
                   </div>
                   <StoneEvolutionButtons

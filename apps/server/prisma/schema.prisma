@@ -85,6 +85,10 @@ model PlayerCreature {
   isOnTeam       Boolean         @default(false)
   isActive       Boolean         @default(false)
   isShiny        Boolean         @default(false)
+  /// Front-to-back position within the team (0 = topmost = active), null when not on the
+  /// team. Set by the drag-and-drop reorder in TeamSidebar; the topmost slot is always
+  /// the active creature, so reordering is the only way to change who's active there.
+  teamSlot       Int?
   caughtAt       DateTime        @default(now())
   marketListings MarketListing[]
   /// The speciesKey this creature evolved FROM, set whenever a level-based evolution catch-up

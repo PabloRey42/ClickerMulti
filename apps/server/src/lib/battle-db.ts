@@ -44,6 +44,26 @@ export async function lockInventoryItem(
   return rows[0] ?? null;
 }
 
+/** Compacts the current team's teamSlot values to a contiguous 0..n-1 sequence (by existing
+ * teamSlot, falling back to caughtAt for members that never had one — e.g. just added via a
+ * capture/gift create call that didn't set it). Safe to call after any team-membership change:
+ * a fresh capture auto-added to the team, or a removal that would otherwise leave a gap a
+ * later addition could collide with (two members ending up with the same teamSlot). Doesn't
+ * touch isActive — only the explicit drag-and-drop reorder (reorderTeam) decides who's active. */
+export async function renumberTeamSlots(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  const team = await tx.playerCreature.findMany({
+    where: { userId, isOnTeam: true },
+    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+  });
+  await Promise.all(
+    team.map((member, index) =>
+      member.teamSlot === index
+        ? Promise.resolve()
+        : tx.playerCreature.update({ where: { id: member.id }, data: { teamSlot: index } }),
+    ),
+  );
+}
+
 export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView {
   const species = SPECIES_CATALOG[creature.speciesKey];
   return {
