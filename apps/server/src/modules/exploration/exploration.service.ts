@@ -127,6 +127,38 @@ function scaledXpReward(level: number, bonuses: SkillTreeBonuses): number {
   return Math.round(xpReward(level) * bonuses.xp);
 }
 
+/** Enforces the game's rule that the active creature is ALWAYS the topmost living team
+ * member (top of the drag-and-drop sidebar = active — see creatures.service.ts's reorderTeam).
+ * Makes that creature the sole `isActive` one, clearing any stale flag. If the whole team is
+ * fainted, the topmost team member (any HP) is kept active so the player never lands in a
+ * "no active creature" state while they still own a team — they just get told to heal.
+ * Returns whether a *living* replacement exists (used to decide "keep fighting" vs "team wiped").
+ */
+async function resolveActiveCreature(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<{ hasLiving: boolean }> {
+  const living = await tx.playerCreature.findFirst({
+    where: { userId, isOnTeam: true, currentHp: { gt: 0 } },
+    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+  });
+  const active =
+    living ??
+    (await tx.playerCreature.findFirst({
+      where: { userId, isOnTeam: true },
+      orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+    }));
+
+  await tx.playerCreature.updateMany({
+    where: { userId, isActive: true, ...(active ? { id: { not: active.id } } : {}) },
+    data: { isActive: false },
+  });
+  if (active && !active.isActive) {
+    await tx.playerCreature.update({ where: { id: active.id }, data: { isActive: true } });
+  }
+  return { hasLiving: living !== null };
+}
+
 export async function buildExplorationState(
   prisma: PrismaClient,
   userId: string,
@@ -512,20 +544,9 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
     const playerHpAfter = Math.max(0, activeCreature.currentHp - damageTaken);
     fainted = playerHpAfter <= 0;
 
-    const healthyTeammates = fainted
-      ? await tx.playerCreature.count({
-          where: { userId, isOnTeam: true, currentHp: { gt: 0 }, id: { not: activeCreature.id } },
-        })
-      : 0;
-    canSwitch = healthyTeammates > 0;
-
-    // Only clear "active" when there's actually another healthy teammate to switch into —
-    // that's a real choice the player needs to make. A full team wipe has no such choice,
-    // so the same creature stays flagged active and simply resumes once healed, instead of
-    // forcing a re-pick from the collection every time the whole team goes down.
     await tx.playerCreature.update({
       where: { id: activeCreature.id },
-      data: { currentHp: playerHpAfter, isActive: canSwitch ? false : true },
+      data: { currentHp: playerHpAfter, isActive: fainted ? false : true },
     });
 
     if (!fainted) {
@@ -533,7 +554,14 @@ export async function attackEncounter(prisma: PrismaClient, userId: string): Pro
       return;
     }
 
-    if (canSwitch) {
+    // Fainted: auto-promote the topmost living teammate (top of the sidebar = active, always —
+    // no manual "choose a replacement" prompt). If one exists the fight resumes seamlessly with
+    // it; otherwise the whole team is down and the encounter ends. resolveActiveCreature also
+    // keeps the topmost member flagged active on a full wipe, so the player is told "ton Pokémon
+    // est K.O., soigne-le" rather than ever hitting a "no active creature" dead end.
+    const { hasLiving } = await resolveActiveCreature(tx, userId);
+    canSwitch = hasLiving;
+    if (hasLiving) {
       await tx.wildEncounter.update({ where: { userId }, data: { currentHp: wildHpAfter } });
     } else {
       await tx.wildEncounter.delete({ where: { userId } });
@@ -706,6 +734,9 @@ export async function healTeam(prisma: PrismaClient, userId: string) {
         data: { currentHp: creatureMaxHp(species.baseHp, member.level) },
       });
     }
+    // Whole team is now healthy — make the topmost member active (not whoever happened to
+    // faint last), matching the "top of the team = active" rule the player sees in the sidebar.
+    await resolveActiveCreature(tx, userId);
     await bumpQuestObjective(tx, userId, "heal_at_center");
   });
 

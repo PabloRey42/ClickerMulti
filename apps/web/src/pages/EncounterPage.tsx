@@ -186,6 +186,9 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
         setShinyReveal(result.capturedShiny);
       } else if (result.leagueCleared) {
         setShowLeagueVictory(true);
+      } else if (result.fainted && result.canSwitch) {
+        const next = result.state.activeCreature;
+        setMessage(next ? `Ton Pokémon est K.O. ! ${next.nickname ?? next.name} prend le relais.` : "Ton Pokémon est K.O. !");
       } else if (result.fainted && !result.canSwitch) {
         setMessage("Ton équipe est K.O. ! Retourne te soigner.");
       }

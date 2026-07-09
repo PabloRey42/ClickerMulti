@@ -134,8 +134,10 @@ export async function setTeamMembership(
       });
 
       if (target.isActive) {
+        // Promote the topmost living teammate (top of the sidebar = active), not an arbitrary one.
         const replacement = await tx.playerCreature.findFirst({
           where: { userId, isOnTeam: true, currentHp: { gt: 0 }, id: { not: creatureId } },
+          orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
         });
         if (replacement) {
           await tx.playerCreature.update({ where: { id: replacement.id }, data: { isActive: true } });
