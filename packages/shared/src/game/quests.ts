@@ -47,6 +47,11 @@ const AURORA_ROUTE_KEYS = [
   "aurora-route-9",
 ];
 
+/** The 12 numbered routes of the Mont Cendré region (see world/lumina.ts). */
+const CENDRE_ROUTE_KEYS = Array.from({ length: 12 }, (_, i) => `cendre-route-${i + 2}`);
+const CENDRE_ROUTES_LOWER = CENDRE_ROUTE_KEYS.slice(0, 6); // routes 2-7
+const CENDRE_ROUTES_UPPER = CENDRE_ROUTE_KEYS.slice(6); // routes 8-13
+
 /** A player can only have one quest accepted at a time (see quests.service.ts). Progress
  * still tracks passively once accepted, but the reward is only granted after returning to
  * the NPC and pressing "Valider" once every objective is done. */
@@ -127,5 +132,94 @@ export const QUEST_CATALOG: Record<string, QuestConfig> = {
       routeKey,
     })),
     reward: { goldReward: 8000n },
+  },
+
+  // ============================================================================
+  // Mont Cendré — épreuves de fin de jeu, volontairement TRÈS TRÈS dures.
+  // Chaîne linéaire (une quête active à la fois), récompenses en or colossales.
+  // ============================================================================
+  cendre_ascension: {
+    key: "cendre_ascension",
+    npcHotspotId: "cendre-gare",
+    npcName: "Maître Ignis",
+    title: "L'Ascension du Mont Cendré",
+    description:
+      "Prouve que tu mérites de gravir le volcan : remporte 250 combats sur chacune des routes basses du Mont Cendré (Routes 2 à 7).",
+    objectives: CENDRE_ROUTES_LOWER.map((routeKey) => ({
+      key: `asc_${routeKey}`,
+      type: "win_battle_on_route" as const,
+      description: `250 victoires sur la ${routeKey.replace("cendre-route-", "Route ")}`,
+      target: 250,
+      routeKey,
+    })),
+    reward: { goldReward: 100000n },
+  },
+  cendre_conquete: {
+    key: "cendre_conquete",
+    npcHotspotId: "cendre-maison-strategie",
+    npcName: "Stratège Obsidienne",
+    title: "Conquérant des Hauteurs",
+    description:
+      "Les routes hautes grouillent de Pokémon surpuissants. Remporte 250 combats sur chacune des Routes 8 à 13.",
+    prerequisiteQuestKey: "cendre_ascension",
+    objectives: CENDRE_ROUTES_UPPER.map((routeKey) => ({
+      key: `conq_${routeKey}`,
+      type: "win_battle_on_route" as const,
+      description: `250 victoires sur la ${routeKey.replace("cendre-route-", "Route ")}`,
+      target: 250,
+      routeKey,
+    })),
+    reward: { goldReward: 250000n },
+  },
+  cendre_dresseur_dragon: {
+    key: "cendre_dresseur_dragon",
+    npcHotspotId: "cendre-bibliotheque",
+    npcName: "Archiviste Draconis",
+    title: "Le Dresseur de Dragons",
+    description:
+      "La Route 13 est le repaire des dragons du Mont Cendré. Domine-les 1 000 fois et capture 100 Pokémon pour graver ton nom dans les légendes.",
+    prerequisiteQuestKey: "cendre_conquete",
+    objectives: [
+      {
+        key: "dragon_route_13",
+        type: "win_battle_on_route",
+        description: "1 000 victoires sur la Route 13 (dragons)",
+        target: 1000,
+        routeKey: "cendre-route-13",
+      },
+      { key: "dragon_captures", type: "capture_creature", description: "Capture 100 Pokémon", target: 100 },
+    ],
+    reward: { goldReward: 500000n },
+  },
+  cendre_legende: {
+    key: "cendre_legende",
+    npcHotspotId: "cendre-autel-eclairs",
+    npcName: "Gardien de l'Autel",
+    title: "Légende du Mont Cendré",
+    description:
+      "Seuls les dresseurs éternels atteignent l'Autel des Éclairs. Remporte 25 000 combats et capture 300 Pokémon.",
+    prerequisiteQuestKey: "cendre_dresseur_dragon",
+    objectives: [
+      { key: "legend_wins", type: "win_battle", description: "Remporte 25 000 combats", target: 25000 },
+      { key: "legend_captures", type: "capture_creature", description: "Capture 300 Pokémon", target: 300 },
+    ],
+    reward: { goldReward: 1000000n },
+  },
+  cendre_perfection: {
+    key: "cendre_perfection",
+    npcHotspotId: "cendre-autel-eclairs",
+    npcName: "Gardien de l'Autel",
+    title: "Perfection Absolue",
+    description:
+      "L'ultime épreuve : deviens le maître incontesté du Mont Cendré en remportant 2 000 combats sur CHACUNE de ses 12 routes. Presque personne n'y parviendra.",
+    prerequisiteQuestKey: "cendre_legende",
+    objectives: CENDRE_ROUTE_KEYS.map((routeKey) => ({
+      key: `perf_${routeKey}`,
+      type: "win_battle_on_route" as const,
+      description: `2 000 victoires sur la ${routeKey.replace("cendre-route-", "Route ")}`,
+      target: 2000,
+      routeKey,
+    })),
+    reward: { goldReward: 5000000n },
   },
 };
