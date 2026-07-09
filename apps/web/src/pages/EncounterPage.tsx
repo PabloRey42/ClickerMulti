@@ -301,6 +301,9 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
   const creature = state?.activeCreature ?? null;
   const defeated = encounter !== null && encounter.currentHp <= 0;
   const switchOptions = team.filter((c) => c.isOnTeam && c.currentHp > 0);
+  // Battles in the Mont Cendré region (its routes and legendary-beast dungeons all use the
+  // "cendre-" hotspot-id prefix) get the volcanic backdrop; everywhere else keeps the default.
+  const battleBg = encounter?.routeKey.startsWith("cendre-") ? "/battle/battle-bg-cendre.png" : "/battle/battle-bg.png";
 
   return (
     <div className="flex flex-col gap-4">
@@ -321,7 +324,7 @@ export function EncounterPage({ onLeave }: { onLeave: () => void }) {
 
         <div
           className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border-2 border-gold-deep bg-cover bg-center"
-          style={{ backgroundImage: "url('/battle/battle-bg.png')" }}
+          style={{ backgroundImage: `url('${battleBg}')` }}
         >
           <div className="absolute inset-0 bg-panel/20" />
 
