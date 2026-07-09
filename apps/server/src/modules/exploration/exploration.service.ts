@@ -41,6 +41,7 @@ import {
   buildEncounterView,
   applyXpGain,
   renumberTeamSlots,
+  resolveActiveCreature,
 } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
 
@@ -125,38 +126,6 @@ function scaledGoldReward(level: number, bonuses: SkillTreeBonuses): bigint {
 
 function scaledXpReward(level: number, bonuses: SkillTreeBonuses): number {
   return Math.round(xpReward(level) * bonuses.xp);
-}
-
-/** Enforces the game's rule that the active creature is ALWAYS the topmost living team
- * member (top of the drag-and-drop sidebar = active — see creatures.service.ts's reorderTeam).
- * Makes that creature the sole `isActive` one, clearing any stale flag. If the whole team is
- * fainted, the topmost team member (any HP) is kept active so the player never lands in a
- * "no active creature" state while they still own a team — they just get told to heal.
- * Returns whether a *living* replacement exists (used to decide "keep fighting" vs "team wiped").
- */
-async function resolveActiveCreature(
-  tx: Prisma.TransactionClient,
-  userId: string,
-): Promise<{ hasLiving: boolean }> {
-  const living = await tx.playerCreature.findFirst({
-    where: { userId, isOnTeam: true, currentHp: { gt: 0 } },
-    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
-  });
-  const active =
-    living ??
-    (await tx.playerCreature.findFirst({
-      where: { userId, isOnTeam: true },
-      orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
-    }));
-
-  await tx.playerCreature.updateMany({
-    where: { userId, isActive: true, ...(active ? { id: { not: active.id } } : {}) },
-    data: { isActive: false },
-  });
-  if (active && !active.isActive) {
-    await tx.playerCreature.update({ where: { id: active.id }, data: { isActive: true } });
-  }
-  return { hasLiving: living !== null };
 }
 
 export async function buildExplorationState(

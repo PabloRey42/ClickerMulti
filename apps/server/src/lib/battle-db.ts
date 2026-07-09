@@ -2,6 +2,8 @@ import type { Prisma, PlayerState, PlayerCreature, WildEncounter, PlayerInventor
 import {
   SPECIES_CATALOG,
   MAX_LEVEL,
+  MAX_SAME_SPECIES_OWNED,
+  MAX_SHINY_SAME_SPECIES_OWNED,
   creatureMaxHp,
   creatureAttack,
   xpToNextLevel,
@@ -62,6 +64,87 @@ export async function renumberTeamSlots(tx: Prisma.TransactionClient, userId: st
         : tx.playerCreature.update({ where: { id: member.id }, data: { teamSlot: index } }),
     ),
   );
+}
+
+/** Enforces the game's rule that the active creature is ALWAYS the topmost living team member
+ * (top of the drag-and-drop sidebar = active — see creatures.service.ts's reorderTeam). Makes
+ * that creature the sole `isActive` one, clearing any stale flag. If the whole team is fainted,
+ * the topmost team member (any HP) is kept active so the player never lands in a "no active
+ * creature" dead end while they still own a team — they just get told to heal. Returns whether a
+ * *living* replacement exists (used to decide "keep fighting" vs "team wiped"). */
+export async function resolveActiveCreature(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<{ hasLiving: boolean }> {
+  const living = await tx.playerCreature.findFirst({
+    where: { userId, isOnTeam: true, currentHp: { gt: 0 } },
+    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+  });
+  const active =
+    living ??
+    (await tx.playerCreature.findFirst({
+      where: { userId, isOnTeam: true },
+      orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+    }));
+
+  await tx.playerCreature.updateMany({
+    where: { userId, isActive: true, ...(active ? { id: { not: active.id } } : {}) },
+    data: { isActive: false },
+  });
+  if (active && !active.isActive) {
+    await tx.playerCreature.update({ where: { id: active.id }, data: { isActive: true } });
+  }
+  return { hasLiving: living !== null };
+}
+
+/** Enforces the per-species ownership cap — MAX_SAME_SPECIES_OWNED non-shiny, plus
+ * MAX_SHINY_SAME_SPECIES_OWNED shiny counted separately — by keeping only the highest-level
+ * copies of each species and deleting the rest ("si on a plus que la limite, garde uniquement
+ * les plus hauts niveaux"). Needed because the cap isn't enforced on evolution (a creature can
+ * evolve into a species you already own the max of) and older saves predate it, so this
+ * reconciles the collection on read. A creature currently listed on the market is never deleted
+ * (that would null its listing) — it's tolerated as temporary overflow until the listing
+ * resolves. Returns whether anything was deleted (so the caller can fix up team slots/active). */
+export async function enforceSpeciesCaps(tx: Prisma.TransactionClient, userId: string): Promise<boolean> {
+  const all = await tx.playerCreature.findMany({ where: { userId } });
+
+  const groups = new Map<string, PlayerCreature[]>();
+  for (const c of all) {
+    const key = `${c.speciesKey}|${c.isShiny}`;
+    const arr = groups.get(key);
+    if (arr) arr.push(c);
+    else groups.set(key, [c]);
+  }
+
+  const excessIds: string[] = [];
+  for (const members of groups.values()) {
+    const cap = members[0].isShiny ? MAX_SHINY_SAME_SPECIES_OWNED : MAX_SAME_SPECIES_OWNED;
+    if (members.length <= cap) continue;
+    // Rank best-first: highest level, then keep the active/team ones on ties, then most XP, then
+    // oldest. Everything past the cap gets pruned.
+    const ranked = [...members].sort(
+      (a, b) =>
+        b.level - a.level ||
+        Number(b.isActive) - Number(a.isActive) ||
+        Number(b.isOnTeam) - Number(a.isOnTeam) ||
+        b.xp - a.xp ||
+        a.caughtAt.getTime() - b.caughtAt.getTime(),
+    );
+    for (const c of ranked.slice(cap)) excessIds.push(c.id);
+  }
+  if (excessIds.length === 0) return false;
+
+  // Never delete a creature that's actively listed for sale — that would null the listing.
+  const listed = await tx.marketListing.findMany({
+    where: { creatureId: { in: excessIds }, status: "ACTIVE" },
+    select: { creatureId: true },
+  });
+  const listedIds = new Set(listed.map((l) => l.creatureId));
+  const deletable = excessIds.filter((id) => !listedIds.has(id));
+  if (deletable.length === 0) return false;
+
+  await tx.playerCreature.deleteMany({ where: { id: { in: deletable } } });
+  return true;
 }
 
 export function buildCreatureView(creature: PlayerCreature): PlayerCreatureView {

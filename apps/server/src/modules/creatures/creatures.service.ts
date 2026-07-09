@@ -15,6 +15,8 @@ import {
   applyPendingEvolution,
   lockInventoryItem,
   renumberTeamSlots,
+  enforceSpeciesCaps,
+  resolveActiveCreature,
   ackEvolutionReveal as ackEvolutionRevealTx,
 } from "../../lib/battle-db.js";
 import { bumpQuestObjective } from "../quests/quests.service.js";
@@ -73,6 +75,18 @@ export async function chooseStarter(
 
 export async function listCreatures(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
   await bumpQuestObjective(prisma, userId, "open_collection");
+
+  // Reconcile the per-species ownership cap (2 non-shiny + 1 shiny), keeping only the highest-
+  // level copies — evolutions and older saves can leave a species over the cap. Done before the
+  // listing so pruned creatures never show up. If anything was removed, compact the team and
+  // re-resolve the active creature (the deleted one may have been on the team / active).
+  await prisma.$transaction(async (tx) => {
+    if (await enforceSpeciesCaps(tx, userId)) {
+      await renumberTeamSlots(tx, userId);
+      await resolveActiveCreature(tx, userId);
+    }
+  });
+
   const creatures = await prisma.playerCreature.findMany({
     where: { userId },
     orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
