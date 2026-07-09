@@ -32,6 +32,7 @@ import {
   type CaptureResponse,
   type FinishEncounterResponse,
   type EvolutionStep,
+  type PlayerCreatureView,
 } from "@farm-clicker/shared";
 import {
   lockPlayerState,
@@ -710,4 +711,34 @@ export async function healTeam(prisma: PrismaClient, userId: string) {
   });
 
   return buildExplorationState(prisma, userId);
+}
+
+export class RelicAlreadyClaimedError extends Error {}
+
+/** Grants the reward for the hidden world-map landmark. Idempotent per account, guarded by
+ * ownership (no dedicated flag/column) so nothing advertises it; grants at level 1 so it still
+ * has to be raised. */
+export async function claimWorldRelic(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView> {
+  const speciesKey = "turtwig";
+  const species = SPECIES_CATALOG[speciesKey];
+
+  const creature = await prisma.$transaction(async (tx) => {
+    const existing = await tx.playerCreature.findFirst({ where: { userId, speciesKey } });
+    if (existing) throw new RelicAlreadyClaimedError();
+
+    const teamCount = await tx.playerCreature.count({ where: { userId, isOnTeam: true } });
+    const created = await tx.playerCreature.create({
+      data: {
+        userId,
+        speciesKey,
+        level: 1,
+        currentHp: creatureMaxHp(species.baseHp, 1),
+        isOnTeam: teamCount < MAX_TEAM_SIZE,
+      },
+    });
+    await renumberTeamSlots(tx, userId);
+    return created;
+  });
+
+  return buildCreatureView(creature);
 }

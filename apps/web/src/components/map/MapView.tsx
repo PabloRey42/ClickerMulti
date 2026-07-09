@@ -13,6 +13,8 @@ interface MapViewProps<H extends HotspotLike> {
   markerClassName: (hotspot: H) => string;
   markerLabel: (hotspot: H) => string;
   onHotspotClick: (hotspot: H) => void;
+  /** Extra content overlaid on the map, positioned by the caller (percent-based). */
+  children?: React.ReactNode;
 }
 
 interface EditorPin {
@@ -34,6 +36,7 @@ export function MapView<H extends HotspotLike>({
   markerClassName,
   markerLabel,
   onHotspotClick,
+  children,
 }: MapViewProps<H>) {
   const [editorMode, setEditorMode] = useState(false);
   const [editorPin, setEditorPin] = useState<EditorPin | null>(null);
@@ -73,6 +76,8 @@ export function MapView<H extends HotspotLike>({
         style={{ cursor: editorMode ? "crosshair" : "default" }}
       >
         <img src={imageSrc} alt={imageAlt} draggable={false} className="h-auto w-full select-none" />
+
+        {children}
 
         {hotspots.map((hotspot) => (
           <button

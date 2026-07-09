@@ -3,6 +3,7 @@ import type {
   AttackResponse,
   CaptureResponse,
   FinishEncounterResponse,
+  PlayerCreatureView,
 } from "@farm-clicker/shared";
 import { apiRequest } from "./client";
 
@@ -61,4 +62,8 @@ export function setAutoCapture(accessToken: string, enabled: boolean) {
     accessToken,
     body: { enabled },
   });
+}
+
+export function touchLandmark(accessToken: string) {
+  return apiRequest<PlayerCreatureView>("/api/exploration/landmark", { method: "POST", accessToken });
 }

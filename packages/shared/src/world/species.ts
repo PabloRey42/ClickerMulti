@@ -655,4 +655,7 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   bisharp: { key: "bisharp", name: "Scalproie", dexNumber: 625, types: ["tenebres", "acier"], baseAttack: 29, baseHp: 52, baseCaptureRate: 0.1, rarityWeight: 1, spriteFile: "bisharp.png", spriteScale: 0.92 },
   litleo: { key: "litleo", name: "Hélionceau", dexNumber: 667, types: ["feu", "normal"], baseAttack: 22, baseHp: 42, baseCaptureRate: 0.3, rarityWeight: 24999, spriteFile: "litleo.png", spriteScale: 0.81, evolution: { intoKey: "pyroar", level: 35 } },
   pyroar: { key: "pyroar", name: "Némélios", dexNumber: 668, types: ["feu", "normal"], baseAttack: 27, baseHp: 50, baseCaptureRate: 0.14, rarityWeight: 1, spriteFile: "pyroar.png", spriteScale: 0.91 },
+  turtwig: { key: "turtwig", name: "Tortipouss", dexNumber: 387, types: ["plante"], baseAttack: 11, baseHp: 30, baseCaptureRate: 0.3, rarityWeight: 1, spriteFile: "turtwig.png", spriteScale: 0.78, evolution: { intoKey: "grotle", level: 18 } },
+  grotle: { key: "grotle", name: "Boskara", dexNumber: 388, types: ["plante"], baseAttack: 15, baseHp: 44, baseCaptureRate: 0.18, rarityWeight: 1, spriteFile: "grotle.png", spriteScale: 0.87, evolution: { intoKey: "torterra", level: 32 } },
+  torterra: { key: "torterra", name: "Torterra", dexNumber: 389, types: ["plante", "sol"], baseAttack: 20, baseHp: 60, baseCaptureRate: 0.11, rarityWeight: 1, spriteFile: "torterra.png", spriteScale: 0.96 },
 };

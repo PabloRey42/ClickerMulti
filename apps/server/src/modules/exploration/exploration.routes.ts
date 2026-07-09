@@ -23,6 +23,8 @@ import {
   AutoCaptureLockedError,
   DuplicateSpeciesLimitError,
   LeagueInProgressError,
+  claimWorldRelic,
+  RelicAlreadyClaimedError,
 } from "./exploration.service.js";
 
 const routeParamsSchema = z.object({ routeKey: z.string().min(1) });
@@ -162,6 +164,16 @@ export default async function explorationRoutes(fastify: FastifyInstance) {
       sendJson(reply, await setAutoCapture(fastify.prisma, userId, parsed.data.enabled));
     } catch (err) {
       if (err instanceof AutoCaptureLockedError) return reply.code(403).send({ error: "auto_capture_locked" });
+      throw err;
+    }
+  });
+
+  fastify.post("/exploration/landmark", { preHandler: fastify.authenticate }, async (request, reply) => {
+    const { sub: userId } = request.user;
+    try {
+      sendJson(reply, await claimWorldRelic(fastify.prisma, userId));
+    } catch (err) {
+      if (err instanceof RelicAlreadyClaimedError) return reply.code(409).send({ error: "already_claimed" });
       throw err;
     }
   });
