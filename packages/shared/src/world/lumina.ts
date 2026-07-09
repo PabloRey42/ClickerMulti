@@ -185,12 +185,50 @@ export const MONT_CENDRE_CITY_MAP: CityMapConfig = {
     { kind: "poi", id: "cendre-gare", name: "Gare du Mont Cendré", action: "quest", shape: { xPercent: 50, yPercent: 45, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-maison-strategie", name: "Maison de la Stratégie", action: "quest", shape: { xPercent: 58, yPercent: 57, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-bibliotheque", name: "Bibliothèque des Légendes", action: "quest", shape: { xPercent: 64, yPercent: 43, radiusPercent: 3 } },
-    { kind: "poi", id: "cendre-autel-eclairs", name: "Autel des Éclairs", action: "quest", shape: { xPercent: 68, yPercent: 18, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-observatoire", name: "Observatoire Volcanique", action: "info", shape: { xPercent: 25, yPercent: 43, radiusPercent: 3 } },
-    { kind: "poi", id: "cendre-sanctuaire-flammes", name: "Sanctuaire des Flammes", action: "info", shape: { xPercent: 23, yPercent: 27, radiusPercent: 3 } },
-    { kind: "poi", id: "cendre-repaire-tenebres", name: "Repaire des Ténèbres", action: "info", shape: { xPercent: 13, yPercent: 60, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-belvedere", name: "Belvédère des Cendres", action: "info", shape: { xPercent: 87, yPercent: 40, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-atelier-forgerons", name: "Atelier des Forgerons", action: "info", shape: { xPercent: 74, yPercent: 29, radiusPercent: 3 } },
+
+    // --- Donjons des 3 chiens légendaires (1/150000 chacun, à leurs emplacements) ---
+    {
+      kind: "dungeon",
+      id: "cendre-sanctuaire-flammes",
+      name: "Sanctuaire des Flammes",
+      elementalType: "feu",
+      encounterTable: [
+        { speciesKey: "ponyta", minLevel: 42, maxLevel: 52, rarityWeight: 75000, captureRate: 0.3 },
+        { speciesKey: "magby", minLevel: 42, maxLevel: 52, rarityWeight: 50000, captureRate: 0.28 },
+        { speciesKey: "litleo", minLevel: 42, maxLevel: 52, rarityWeight: 24999, captureRate: 0.3 },
+        { speciesKey: "entei", minLevel: 60, maxLevel: 60, rarityWeight: 1, captureRate: 0.02 },
+      ],
+      shape: { xPercent: 23, yPercent: 22, radiusPercent: 3 },
+    },
+    {
+      kind: "dungeon",
+      id: "cendre-autel-eclairs",
+      name: "Autel des Éclairs",
+      elementalType: "electrique",
+      encounterTable: [
+        { speciesKey: "elekid", minLevel: 46, maxLevel: 55, rarityWeight: 75000, captureRate: 0.28 },
+        { speciesKey: "blitzle", minLevel: 46, maxLevel: 55, rarityWeight: 50000, captureRate: 0.3 },
+        { speciesKey: "pachirisu", minLevel: 46, maxLevel: 55, rarityWeight: 24999, captureRate: 0.3 },
+        { speciesKey: "raikou", minLevel: 60, maxLevel: 60, rarityWeight: 1, captureRate: 0.02 },
+      ],
+      shape: { xPercent: 65, yPercent: 16, radiusPercent: 3 },
+    },
+    {
+      kind: "dungeon",
+      id: "cendre-repaire-tenebres",
+      name: "Repaire des Ténèbres",
+      elementalType: "tenebres",
+      encounterTable: [
+        { speciesKey: "purrloin", minLevel: 50, maxLevel: 58, rarityWeight: 75000, captureRate: 0.3 },
+        { speciesKey: "stunky", minLevel: 50, maxLevel: 58, rarityWeight: 50000, captureRate: 0.3 },
+        { speciesKey: "pawniard", minLevel: 50, maxLevel: 58, rarityWeight: 24999, captureRate: 0.25 },
+        { speciesKey: "suicune", minLevel: 60, maxLevel: 60, rarityWeight: 1, captureRate: 0.02 },
+      ],
+      shape: { xPercent: 12, yPercent: 57, radiusPercent: 3 },
+    },
 
     {
       kind: "route",

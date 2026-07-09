@@ -193,11 +193,11 @@ export const QUEST_CATALOG: Record<string, QuestConfig> = {
   },
   cendre_legende: {
     key: "cendre_legende",
-    npcHotspotId: "cendre-autel-eclairs",
-    npcName: "Gardien de l'Autel",
+    npcHotspotId: "cendre-maison-strategie",
+    npcName: "Stratège Obsidienne",
     title: "Légende du Mont Cendré",
     description:
-      "Seuls les dresseurs éternels atteignent l'Autel des Éclairs. Remporte 25 000 combats et capture 300 Pokémon.",
+      "Seuls les dresseurs éternels marquent l'histoire du Mont Cendré. Remporte 25 000 combats et capture 300 Pokémon.",
     prerequisiteQuestKey: "cendre_dresseur_dragon",
     objectives: [
       { key: "legend_wins", type: "win_battle", description: "Remporte 25 000 combats", target: 25000 },
@@ -207,8 +207,8 @@ export const QUEST_CATALOG: Record<string, QuestConfig> = {
   },
   cendre_perfection: {
     key: "cendre_perfection",
-    npcHotspotId: "cendre-autel-eclairs",
-    npcName: "Gardien de l'Autel",
+    npcHotspotId: "cendre-maison-strategie",
+    npcName: "Stratège Obsidienne",
     title: "Perfection Absolue",
     description:
       "L'ultime épreuve : deviens le maître incontesté du Mont Cendré en remportant 2 000 combats sur CHACUNE de ses 12 routes. Presque personne n'y parviendra.",
