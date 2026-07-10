@@ -116,7 +116,9 @@ export function CollectionPage() {
         setError(
           body?.error === "insufficient_stones"
             ? "Tu n'as plus cette pierre."
-            : "Ce Pokémon ne peut pas évoluer avec cette pierre.",
+            : body?.error === "duplicate_species_limit"
+              ? "Tu as déjà atteint la limite pour ce Pokémon (2 classiques + 1 shiny)."
+              : "Ce Pokémon ne peut pas évoluer avec cette pierre.",
         );
       }
     } finally {

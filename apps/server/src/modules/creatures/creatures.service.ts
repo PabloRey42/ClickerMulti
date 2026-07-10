@@ -3,6 +3,8 @@ import {
   SPECIES_CATALOG,
   STARTER_SPECIES_KEYS,
   MAX_TEAM_SIZE,
+  MAX_SAME_SPECIES_OWNED,
+  MAX_SHINY_SAME_SPECIES_OWNED,
   STONE_CATALOG,
   creatureMaxHp,
   resolveStoneEvolution,
@@ -30,6 +32,7 @@ export class StarterAlreadyChosenError extends Error {}
 export class InvalidStoneError extends Error {}
 export class NoStoneEvolutionError extends Error {}
 export class InsufficientStonesError extends Error {}
+export class DuplicateSpeciesLimitError extends Error {}
 export class InvalidTeamOrderError extends Error {}
 
 export function getStarterOptions(): SpeciesView[] {
@@ -240,6 +243,15 @@ export async function useEvolutionStone(
 
     const targetKey = resolveStoneEvolution(creature.speciesKey, stoneKey);
     if (!targetKey) throw new NoStoneEvolutionError();
+
+    // A stone evolution is a deliberate, player-chosen action (unlike passive level-up
+    // evolution — see applyXpGain's doc comment) — reject it up front instead of silently
+    // evolving and then having enforceSpeciesCaps delete some other creature to compensate.
+    const speciesCap = creature.isShiny ? MAX_SHINY_SAME_SPECIES_OWNED : MAX_SAME_SPECIES_OWNED;
+    const ownedCount = await tx.playerCreature.count({
+      where: { userId, speciesKey: targetKey, isShiny: creature.isShiny, id: { not: creature.id } },
+    });
+    if (ownedCount >= speciesCap) throw new DuplicateSpeciesLimitError();
 
     const inventory = await lockInventoryItem(tx, userId, stoneKey);
     if (!inventory || inventory.quantity < 1) throw new InsufficientStonesError();

@@ -201,7 +201,12 @@ export function buildEncounterView(encounter: WildEncounter): WildEncounterView 
  * evolves it (speciesKey change) as soon as the new level crosses its species' evolution
  * threshold — a multi-level jump in one XP grant can cross more than one threshold in a row
  * (`resolveEvolutionSteps` walks the whole chain), so the client gets every step to animate
- * in sequence. Level never goes past MAX_LEVEL — once there, further XP is simply discarded. */
+ * in sequence. Level never goes past MAX_LEVEL — once there, further XP is simply discarded.
+ *
+ * An evolution here can push the player over the per-species ownership cap (evolving a
+ * different species into one they already own the max of) — immediately reconciles via
+ * enforceSpeciesCaps rather than leaving a visible overflow until the next Collection fetch,
+ * so the player never actually sees themselves holding 3 of a 2-capped species. */
 export async function applyXpGain(
   tx: Prisma.TransactionClient,
   creature: PlayerCreature,
@@ -225,6 +230,11 @@ export async function applyXpGain(
   const currentHp = leveledUp ? creatureMaxHp(finalSpecies.baseHp, level) : creature.currentHp;
 
   await tx.playerCreature.update({ where: { id: creature.id }, data: { xp, level, currentHp, speciesKey } });
+
+  if (evolution.length > 0) {
+    await enforceSpeciesCaps(tx, creature.userId);
+  }
+
   return { leveledUp, evolution };
 }
 

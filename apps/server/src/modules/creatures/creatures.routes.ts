@@ -20,6 +20,7 @@ import {
   InvalidStoneError,
   NoStoneEvolutionError,
   InsufficientStonesError,
+  DuplicateSpeciesLimitError,
   InvalidTeamOrderError,
 } from "./creatures.service.js";
 
@@ -127,6 +128,7 @@ export default async function creaturesRoutes(fastify: FastifyInstance) {
         if (err instanceof InvalidStoneError) return reply.code(400).send({ error: "invalid_stone" });
         if (err instanceof NoStoneEvolutionError) return reply.code(409).send({ error: "no_stone_evolution" });
         if (err instanceof InsufficientStonesError) return reply.code(409).send({ error: "insufficient_stones" });
+        if (err instanceof DuplicateSpeciesLimitError) return reply.code(409).send({ error: "duplicate_species_limit" });
         throw err;
       }
     },
