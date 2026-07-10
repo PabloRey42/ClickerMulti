@@ -79,33 +79,53 @@ export async function chooseStarter(
 export async function listCreatures(prisma: PrismaClient, userId: string): Promise<PlayerCreatureView[]> {
   await bumpQuestObjective(prisma, userId, "open_collection");
 
-  // Reconcile the per-species ownership cap (2 non-shiny + 1 shiny), keeping only the highest-
-  // level copies — evolutions and older saves can leave a species over the cap. Done before the
-  // listing so pruned creatures never show up. If anything was removed, compact the team and
-  // re-resolve the active creature (the deleted one may have been on the team / active).
-  await prisma.$transaction(async (tx) => {
+  const creatures = await prisma.$transaction(async (tx) => {
+    // Reconcile the per-species ownership cap (2 non-shiny + 1 shiny), keeping only the
+    // highest-level copies — evolutions and older saves can leave a species over the cap. Done
+    // before the listing so pruned creatures never show up. If anything was removed, compact
+    // the team and re-resolve the active creature (the deleted one may have been on the team /
+    // active).
     if (await enforceSpeciesCaps(tx, userId)) {
       await renumberTeamSlots(tx, userId);
       await resolveActiveCreature(tx, userId);
     }
+
+    let rows = await tx.playerCreature.findMany({
+      where: { userId },
+      orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+    });
+
+    // Retroactively catches up any creature whose level already qualifies for an evolution it
+    // never went through (e.g. it reached that level before this feature shipped, or before its
+    // species' evolution was added to the catalog) — see applyPendingEvolution's doc comment.
+    // Cheap no-op for the common case. This can itself push a species over the cap (evolving
+    // into one already at the limit), so re-run enforceSpeciesCaps afterward and re-fetch if
+    // anything evolved — otherwise a stale catch-up here would silently leave the player owning
+    // more than the cap until some *other* action happened to trigger reconciliation.
+    let evolvedAny = false;
+    for (const creature of rows) {
+      const { evolution } = await applyPendingEvolution(tx, creature);
+      if (evolution.length > 0) evolvedAny = true;
+    }
+
+    if (evolvedAny) {
+      if (await enforceSpeciesCaps(tx, userId)) {
+        await renumberTeamSlots(tx, userId);
+        await resolveActiveCreature(tx, userId);
+      }
+      rows = await tx.playerCreature.findMany({
+        where: { userId },
+        orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
+      });
+    }
+
+    return rows;
   });
 
-  const creatures = await prisma.playerCreature.findMany({
-    where: { userId },
-    orderBy: [{ teamSlot: "asc" }, { caughtAt: "asc" }],
-  });
-
-  const views: PlayerCreatureView[] = [];
-  for (const creature of creatures) {
-    // Retroactively catches up any creature whose level already qualifies for an evolution
-    // it never went through (e.g. it reached that level before this feature shipped) — see
-    // applyPendingEvolution's doc comment. Cheap no-op for the common case. buildCreatureView
-    // derives evolvedNow from the durable pendingEvolutionFrom column, not from this call's
-    // own result, so the reveal keeps surfacing on every fetch until it's acknowledged.
-    const { creature: resolved } = await applyPendingEvolution(prisma, creature);
-    views.push(buildCreatureView(resolved));
-  }
-  return views;
+  // buildCreatureView derives evolvedNow from the durable pendingEvolutionFrom column (not from
+  // applyPendingEvolution's own per-call result), so the reveal keeps surfacing on every fetch
+  // until the client acks it.
+  return creatures.map(buildCreatureView);
 }
 
 export async function activateCreature(
