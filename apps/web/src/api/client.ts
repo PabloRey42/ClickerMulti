@@ -70,7 +70,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       useAuthStore.getState().setAccessToken(newAccessToken);
       const retry = await rawRequest<T>(path, { ...options, accessToken: newAccessToken });
       if (!retry.ok) {
-        useAuthStore.getState().logout();
+        // Only a still-401 after a fresh token means the session itself is dead — any other
+        // failure (500, 409, 400...) is unrelated to auth and must not force a logout.
+        if (retry.status === 401) useAuthStore.getState().logout();
         throw new ApiError(retry.status, retry.data);
       }
       return retry.data;
