@@ -8,6 +8,7 @@ import { ApiError } from "../api/client";
 import { creatureSpriteSrc, creatureSpriteTransform } from "../theme/typeColors";
 import { RaidVictoryAnimation } from "../components/RaidVictoryAnimation";
 import { RaidCaptureRevealModal } from "../components/RaidCaptureRevealModal";
+import { RaidLossAnimation } from "../components/RaidLossAnimation";
 
 const ERROR_MESSAGES: Record<string, string> = {
   raid_lobby_not_found: "Ce raid n'existe plus.",
@@ -41,6 +42,7 @@ export function RaidLobbyPage({ lobbyId, onLeave }: { lobbyId: string; onLeave: 
   const [now, setNow] = useState(Date.now());
   const [showVictory, setShowVictory] = useState(false);
   const [showCaptureReveal, setShowCaptureReveal] = useState(false);
+  const [showLoss, setShowLoss] = useState(false);
   const prevStatusRef = useRef<RaidLobbyStatus | null>(null);
 
   useEffect(() => {
@@ -71,12 +73,14 @@ export function RaidLobbyPage({ lobbyId, onLeave }: { lobbyId: string; onLeave: 
     return () => clearInterval(interval);
   }, []);
 
-  // Edge-triggers the victory sequence exactly once, the moment the status actually flips —
-  // not on every snapshot update while already WON (which would replay the animation on
-  // every subsequent broadcast, e.g. another participant's late attack still landing).
+  // Edge-triggers the victory/loss sequence exactly once, the moment the status actually
+  // flips — not on every snapshot update while already resolved (which would replay the
+  // animation on every subsequent broadcast, e.g. another participant's late attack landing
+  // after the timer already expired the lobby).
   useEffect(() => {
     if (!snapshot) return;
     if (prevStatusRef.current !== "WON" && snapshot.status === "WON") setShowVictory(true);
+    if (prevStatusRef.current !== "LOST" && snapshot.status === "LOST") setShowLoss(true);
     prevStatusRef.current = snapshot.status;
   }, [snapshot?.status]);
 
@@ -296,6 +300,7 @@ export function RaidLobbyPage({ lobbyId, onLeave }: { lobbyId: string; onLeave: 
           onDone={() => setShowCaptureReveal(false)}
         />
       )}
+      {showLoss && boss && <RaidLossAnimation raidBossKey={boss.key} onDone={() => setShowLoss(false)} />}
     </section>
   );
 }
