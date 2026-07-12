@@ -17,6 +17,7 @@ const HOTSPOT_CLASS: Record<CityMapHotspot["kind"], string> = {
   route: "bg-stat-hp",
   poi: "bg-stat-xp",
   dungeon: "bg-stat-pp",
+  raid: "raid-marker bg-gradient-to-br from-stat-pp to-gold",
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -29,6 +30,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 export function CityMapPage({ cityId }: { cityId: string }) {
   const goToWorld = useExplorationStore((s) => s.goToWorld);
   const goToEncounter = useExplorationStore((s) => s.goToEncounter);
+  const goToRaidBrowser = useExplorationStore((s) => s.goToRaidBrowser);
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const setBattleState = useBattleStore((s) => s.setState);
@@ -131,6 +133,7 @@ export function CityMapPage({ cityId }: { cityId: string }) {
           { color: "bg-stat-hp", label: "Route" },
           { color: "bg-stat-xp", label: "Point d'intérêt" },
           { color: "bg-stat-pp", label: "Donjon" },
+          { color: "bg-gradient-to-br from-stat-pp to-gold", label: "Raid" },
         ]}
       />
 
@@ -152,6 +155,10 @@ export function CityMapPage({ cityId }: { cityId: string }) {
           }}
           onOpenQuest={() => {
             if (selected) setQuestNpcHotspotId(selected.id);
+            setSelected(null);
+          }}
+          onOpenRaid={() => {
+            if (selected) goToRaidBrowser(selected.id, cityId);
             setSelected(null);
           }}
         />

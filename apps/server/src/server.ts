@@ -16,6 +16,7 @@ import adminRoutes from "./modules/admin/admin.routes.js";
 import questsRoutes from "./modules/quests/quests.routes.js";
 import statsRoutes from "./modules/stats/stats.routes.js";
 import easterEggRoutes from "./modules/easterEgg/easterEgg.routes.js";
+import raidRoutes from "./modules/raid/raid.routes.js";
 
 const fastify = Fastify({ logger: true });
 
@@ -37,6 +38,7 @@ try {
   await fastify.register(questsRoutes, { prefix: "/api" });
   await fastify.register(statsRoutes, { prefix: "/api" });
   await fastify.register(easterEggRoutes, { prefix: "/api" });
+  await fastify.register(raidRoutes, { prefix: "/api" });
 
   fastify.get("/api/health", async () => ({ status: "ok" }));
 

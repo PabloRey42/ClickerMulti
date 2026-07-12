@@ -658,4 +658,15 @@ export const SPECIES_CATALOG: Record<string, SpeciesConfig> = {
   turtwig: { key: "turtwig", name: "Tortipouss", dexNumber: 387, types: ["plante"], baseAttack: 11, baseHp: 30, baseCaptureRate: 0.3, rarityWeight: 1, spriteFile: "turtwig.png", spriteScale: 0.78, evolution: { intoKey: "grotle", level: 18 } },
   grotle: { key: "grotle", name: "Boskara", dexNumber: 388, types: ["plante"], baseAttack: 15, baseHp: 44, baseCaptureRate: 0.18, rarityWeight: 1, spriteFile: "grotle.png", spriteScale: 0.87, evolution: { intoKey: "torterra", level: 32 } },
   torterra: { key: "torterra", name: "Torterra", dexNumber: 389, types: ["plante", "sol"], baseAttack: 20, baseHp: 60, baseCaptureRate: 0.11, rarityWeight: 1, spriteFile: "torterra.png", spriteScale: 0.96 },
+
+  // === Raid boss reward — Groudon (packages/shared/src/game/raidBosses.ts) ===
+  // Deliberately absent from every encounterTable and every evolution/stoneEvolutions
+  // target: the ONLY way to own this species is the raid's independent 1/1000 capture roll
+  // on victory (see resolveRaidVictory in raid.service.ts). Same "obtainable outside the
+  // normal obtainability audit, on purpose" precedent as turtwig/claimWorldRelic above —
+  // don't flag this as a bug if a future audit script walks encounterTable/evolution graphs.
+  // Base stats are the strongest catchable tier in the game (a notch above the Mont Cendré
+  // legendary beasts), fitting its status as an end-game raid trophy rather than the raw
+  // real-game 150/100 stats, which would break this game's internal power scale.
+  groudon: { key: "groudon", name: "Groudon", dexNumber: 383, types: ["sol"], baseAttack: 36, baseHp: 70, baseCaptureRate: 0.02, rarityWeight: 1, spriteFile: "groudon.png", spriteScale: 1.02 },
 };

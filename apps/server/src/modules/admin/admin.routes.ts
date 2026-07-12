@@ -20,10 +20,18 @@ import {
   CreatureNotFoundError,
   InvalidItemError,
 } from "./admin.service.js";
+import {
+  adminForceLobbyTimeout,
+  adminSetBossHp,
+  RaidLobbyNotFoundError,
+  RaidLobbyNotInProgressError,
+} from "../raid/raid.service.js";
+import { broadcastRaidUpdate } from "../raid/raid.timers.js";
 
 const userParamsSchema = z.object({ userId: z.string().min(1) });
 const creatureParamsSchema = z.object({ userId: z.string().min(1), creatureId: z.string().min(1) });
 const itemParamsSchema = z.object({ userId: z.string().min(1), itemKey: z.string().min(1) });
+const raidLobbyParamsSchema = z.object({ lobbyId: z.string().min(1) });
 
 const goldBodySchema = z.object({ goldBalance: z.string().regex(/^\d+$/) });
 const forceShinyBodySchema = z.object({ enabled: z.boolean() });
@@ -32,6 +40,7 @@ const passwordBodySchema = z.object({ password: z.string().min(8).max(100) });
 const creatureBodySchema = z.object({ speciesKey: z.string().min(1), level: z.number().int().min(1).max(MAX_LEVEL) });
 const creatureShinyBodySchema = z.object({ isShiny: z.boolean() });
 const itemBodySchema = z.object({ quantity: z.number().int().min(0).max(999999) });
+const raidBossHpBodySchema = z.object({ bossCurrentHp: z.number().int().min(0) });
 
 export default async function adminRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", fastify.authenticate);
@@ -165,6 +174,42 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     } catch (err) {
       if (err instanceof UserNotFoundError) return reply.code(404).send({ error: "user_not_found" });
       if (err instanceof InvalidItemError) return reply.code(400).send({ error: "invalid_item" });
+      throw err;
+    }
+  });
+
+  // QA escape hatches for raids: this dev machine has no local Docker/DB, so raids can only
+  // ever be played end-to-end on the VPS, and waiting out real 2min/3min timers on every
+  // playtest iteration isn't practical — these fast-forward the current deadline or set the
+  // boss HP directly, reusing raid.service.ts's own lock/self-heal/broadcast path.
+  fastify.patch("/admin/raids/:lobbyId/force-timeout", async (request, reply) => {
+    const parsed = raidLobbyParamsSchema.safeParse(request.params);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_params" });
+
+    try {
+      const lobby = await adminForceLobbyTimeout(fastify.prisma, parsed.data.lobbyId);
+      await broadcastRaidUpdate(fastify, lobby.id);
+      sendJson(reply, lobby);
+    } catch (err) {
+      if (err instanceof RaidLobbyNotFoundError) return reply.code(404).send({ error: "raid_lobby_not_found" });
+      throw err;
+    }
+  });
+
+  fastify.patch("/admin/raids/:lobbyId/set-boss-hp", async (request, reply) => {
+    const params = raidLobbyParamsSchema.safeParse(request.params);
+    const body = raidBossHpBodySchema.safeParse(request.body);
+    if (!params.success || !body.success) return reply.code(400).send({ error: "invalid_body" });
+
+    try {
+      const lobby = await adminSetBossHp(fastify.prisma, params.data.lobbyId, body.data.bossCurrentHp);
+      await broadcastRaidUpdate(fastify, lobby.id);
+      sendJson(reply, lobby);
+    } catch (err) {
+      if (err instanceof RaidLobbyNotFoundError) return reply.code(404).send({ error: "raid_lobby_not_found" });
+      if (err instanceof RaidLobbyNotInProgressError) {
+        return reply.code(409).send({ error: "raid_lobby_not_in_progress" });
+      }
       throw err;
     }
   });

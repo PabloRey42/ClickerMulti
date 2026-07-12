@@ -189,6 +189,15 @@ export const MONT_CENDRE_CITY_MAP: CityMapConfig = {
     { kind: "poi", id: "cendre-belvedere", name: "Belvédère des Cendres", action: "info", shape: { xPercent: 87, yPercent: 40, radiusPercent: 3 } },
     { kind: "poi", id: "cendre-atelier-forgerons", name: "Atelier des Forgerons", action: "info", shape: { xPercent: 74, yPercent: 29, radiusPercent: 3 } },
 
+    // --- Raid boss : le cratère au sommet du volcan (calibré via la méthode grille+marqueur) ---
+    {
+      kind: "raid",
+      id: "cendre-cratere-groudon",
+      name: "Cratère de Groudon",
+      raidBossKey: "groudon",
+      shape: { xPercent: 49, yPercent: 14, radiusPercent: 3.5 },
+    },
+
     // --- Donjons des 3 chiens légendaires (1/150000 chacun, à leurs emplacements) ---
     {
       kind: "dungeon",

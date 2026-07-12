@@ -23,6 +23,8 @@ model User {
   skillBranches   PlayerSkillBranch[]
   marketListings  MarketListing[]
   questProgress   PlayerQuestProgress[]
+  raidLobbiesCreated RaidLobby[]      @relation("RaidLobbyCreator")
+  raidParticipations RaidParticipant[]
 }
 
 /// Core player state: gold and combo momentum for the click-to-attack battle loop.
@@ -212,5 +214,61 @@ model PlayerQuestProgress {
   completedAt       DateTime?
 
   @@unique([userId, questKey])
+  @@index([userId])
+}
+
+enum RaidLobbyStatus {
+  WAITING
+  IN_PROGRESS
+  WON
+  LOST
+  EXPIRED
+}
+
+/// A raid boss encounter instance at a specific hotspot (e.g. Groudon atop Mont Cendré).
+/// raidBossKey references the static RAID_BOSS_CATALOG in @farm-clicker/shared, not a DB
+/// row — same pattern as WildEncounter.speciesKey -> SPECIES_CATALOG. Multiple concurrent
+/// lobbies can exist at the same hotspotId (Pokémon GO style multi-group raids). Timers
+/// (startsAt/battleEndsAt) are always re-derived lazily on every read/mutation rather than
+/// trusted from a single in-memory setTimeout firing — see raid.service.ts's
+/// resolveLobbyTimersIfDue, same "durable, not one-shot" lesson as PlayerCreature.pendingEvolutionFrom.
+model RaidLobby {
+  id            String            @id @default(cuid())
+  raidBossKey   String
+  hotspotId     String
+  cityMapId     String
+  status        RaidLobbyStatus   @default(WAITING)
+  creatorId     String
+  creator       User              @relation("RaidLobbyCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  bossMaxHp     Int
+  bossCurrentHp Int
+  createdAt     DateTime          @default(now())
+  /// Auto-start deadline = createdAt + RaidBossConfig.lobbyWaitMs. Always set at creation.
+  startsAt      DateTime
+  /// Set the moment the battle actually begins (manual start OR auto-start resolution) =
+  /// that moment + RaidBossConfig.battleDurationMs. Null while still WAITING.
+  battleEndsAt  DateTime?
+  resolvedAt    DateTime?
+  participants  RaidParticipant[]
+
+  @@index([hotspotId, status])
+}
+
+/// A user can only hold one non-terminal (WAITING/IN_PROGRESS) row across ALL lobbies at a
+/// time — enforced in raid.service.ts, not representable as a DB constraint since status
+/// lives on the parent row. Leaving is only allowed while WAITING (see raid.service.ts) so
+/// "who fought" (and therefore who gets a capture roll on victory) is simply every remaining
+/// participant row once the lobby resolves.
+model RaidParticipant {
+  id          String    @id @default(cuid())
+  lobbyId     String
+  lobby       RaidLobby @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+  damageDealt Int       @default(0)
+  caughtBoss  Boolean   @default(false)
+
+  @@unique([lobbyId, userId])
   @@index([userId])
 }

@@ -18,6 +18,7 @@ interface HotspotPanelProps {
   onOpenShop: () => void;
   onOpenMarket: () => void;
   onOpenQuest: () => void;
+  onOpenRaid: () => void;
 }
 
 export function HotspotPanel({
@@ -30,6 +31,7 @@ export function HotspotPanel({
   onOpenShop,
   onOpenMarket,
   onOpenQuest,
+  onOpenRaid,
 }: HotspotPanelProps) {
   const isEncounterZone = hotspot.kind === "route" || hotspot.kind === "dungeon";
 
@@ -52,6 +54,12 @@ export function HotspotPanel({
         {isEncounterZone && (
           <p className="mb-3 text-sm font-semibold text-panel-foreground/70">
             {hotspot.kind === "dungeon" ? "Donjon" : "Route"} — des Pokémon sauvages rôdent ici.
+          </p>
+        )}
+        {hotspot.kind === "raid" && (
+          <p className="mb-3 text-sm font-semibold text-panel-foreground/70">
+            Un raid boss impossible à vaincre seul — rejoins ou crée un groupe d'au moins 2
+            dresseurs pour l'affronter.
           </p>
         )}
 
@@ -106,6 +114,16 @@ export function HotspotPanel({
               className="rounded-full border-2 border-gold-light bg-gradient-to-b from-gold-light to-gold-deep px-4 py-2.5 text-sm font-black uppercase tracking-wide text-panel shadow-[0_4px_0_var(--gold-deep)] transition-all active:translate-y-1 active:shadow-none"
             >
               Parler
+            </button>
+          )}
+
+          {hotspot.kind === "raid" && (
+            <button
+              type="button"
+              onClick={onOpenRaid}
+              className="rounded-full border-2 border-stat-pp bg-gradient-to-b from-stat-pp to-gold px-4 py-2.5 text-sm font-black uppercase tracking-wide text-panel shadow-[0_4px_0_var(--gold-deep)] transition-all active:translate-y-1 active:shadow-none"
+            >
+              Entrer dans l'antre
             </button>
           )}
         </div>

@@ -1,4 +1,4 @@
-import type { AdminUserListResponse, AdminUserDetail } from "@farm-clicker/shared";
+import type { AdminUserListResponse, AdminUserDetail, RaidLobbySnapshot } from "@farm-clicker/shared";
 import { apiRequest } from "./client";
 
 export function listAdminUsers(accessToken: string) {
@@ -76,5 +76,25 @@ export function deleteAdminUser(accessToken: string, userId: string) {
   return apiRequest<void>(`/api/admin/users/${userId}`, {
     method: "DELETE",
     accessToken,
+  });
+}
+
+/** QA escape hatch: fast-forwards a raid lobby's current deadline (auto-start while
+ * WAITING, or the battle timer while IN_PROGRESS) and resolves it immediately — avoids
+ * waiting out real 2min/3min timers on every playtest iteration. */
+export function forceRaidLobbyTimeout(accessToken: string, lobbyId: string) {
+  return apiRequest<RaidLobbySnapshot>(`/api/admin/raids/${lobbyId}/force-timeout`, {
+    method: "PATCH",
+    accessToken,
+  });
+}
+
+/** QA escape hatch: directly sets the shared boss HP (e.g. down to 0 to instantly test the
+ * victory/capture-roll/animation flow without grinding the real HP pool). */
+export function setAdminRaidBossHp(accessToken: string, lobbyId: string, bossCurrentHp: number) {
+  return apiRequest<RaidLobbySnapshot>(`/api/admin/raids/${lobbyId}/set-boss-hp`, {
+    method: "PATCH",
+    accessToken,
+    body: { bossCurrentHp },
   });
 }

@@ -6,7 +6,9 @@ type ExplorationScreen =
   | { view: "world" }
   | { view: "city"; cityId: string }
   | { view: "league" }
-  | { view: "encounter"; returnTo: EncounterReturnTarget };
+  | { view: "encounter"; returnTo: EncounterReturnTarget }
+  | { view: "raid-browser"; hotspotId: string; cityId: string }
+  | { view: "raid-lobby"; lobbyId: string; cityId: string };
 
 interface ExplorationState {
   screen: ExplorationScreen;
@@ -15,6 +17,8 @@ interface ExplorationState {
   goToWorld: () => void;
   goToLeague: () => void;
   goToEncounter: (returnTo: EncounterReturnTarget) => void;
+  goToRaidBrowser: (hotspotId: string, cityId: string) => void;
+  goToRaidLobby: (lobbyId: string, cityId: string) => void;
 }
 
 const TRANSITION_MS = 350;
@@ -37,5 +41,16 @@ export const useExplorationStore = create<ExplorationState>((set) => ({
   goToEncounter: (returnTo) => {
     set({ transitioning: true });
     setTimeout(() => set({ screen: { view: "encounter", returnTo }, transitioning: false }), TRANSITION_MS);
+  },
+  goToRaidBrowser: (hotspotId, cityId) => {
+    set({ transitioning: true });
+    setTimeout(
+      () => set({ screen: { view: "raid-browser", hotspotId, cityId }, transitioning: false }),
+      TRANSITION_MS,
+    );
+  },
+  goToRaidLobby: (lobbyId, cityId) => {
+    set({ transitioning: true });
+    setTimeout(() => set({ screen: { view: "raid-lobby", lobbyId, cityId }, transitioning: false }), TRANSITION_MS);
   },
 }));

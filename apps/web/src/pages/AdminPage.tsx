@@ -21,6 +21,8 @@ import {
   deleteAdminCreature,
   setAdminInventoryItem,
   deleteAdminUser,
+  forceRaidLobbyTimeout,
+  setAdminRaidBossHp,
 } from "../api/admin";
 
 const ALL_SPECIES = Object.values(SPECIES_CATALOG).sort((a, b) => a.dexNumber - b.dexNumber);
@@ -48,6 +50,8 @@ export function AdminPage() {
   const [creatureSpecies, setCreatureSpecies] = useState(ALL_SPECIES[0]?.key ?? "");
   const [creatureLevel, setCreatureLevel] = useState("5");
   const [itemQuantities, setItemQuantities] = useState<Record<string, string>>({});
+  const [raidLobbyIdInput, setRaidLobbyIdInput] = useState("");
+  const [raidMessage, setRaidMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -152,6 +156,24 @@ export function AdminPage() {
     handleAction(() => setAdminShinyCharm(accessToken!, selectedId, !detail.hasShinyCharm));
   }
 
+  function handleForceRaidTimeout() {
+    if (!raidLobbyIdInput.trim()) return;
+    setRaidMessage(null);
+    handleAction(async () => {
+      const lobby = await forceRaidLobbyTimeout(accessToken!, raidLobbyIdInput.trim());
+      setRaidMessage(`Lobby -> ${lobby.status}`);
+    });
+  }
+
+  function handleForceRaidWin() {
+    if (!raidLobbyIdInput.trim()) return;
+    setRaidMessage(null);
+    handleAction(async () => {
+      const lobby = await setAdminRaidBossHp(accessToken!, raidLobbyIdInput.trim(), 0);
+      setRaidMessage(`Lobby -> ${lobby.status}`);
+    });
+  }
+
   function handleDeleteUser() {
     if (!selectedId || !detail) return;
     if (!window.confirm(`Supprimer définitivement le compte "${detail.username}" et toutes ses données ?`)) return;
@@ -169,6 +191,32 @@ export function AdminPage() {
       </h1>
 
       {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
+
+      <div className="mb-4 rounded-xl border-2 border-stat-pp bg-panel p-3">
+        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+          Mode test — Raid boss
+        </h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={raidLobbyIdInput}
+            onChange={(e) => setRaidLobbyIdInput(e.target.value)}
+            placeholder="ID du lobby de raid"
+            className={`${inputClass} w-64`}
+          />
+          <button type="button" disabled={busy} onClick={handleForceRaidTimeout} className={buttonClass}>
+            Forcer le délai (démarrer/terminer)
+          </button>
+          <button type="button" disabled={busy} onClick={handleForceRaidWin} className={buttonClass}>
+            Mettre PV boss à 0 (victoire instantanée)
+          </button>
+          {raidMessage && <span className="text-[10px] font-bold text-stat-xp">{raidMessage}</span>}
+        </div>
+        <p className="mt-2 text-[10px] font-semibold text-panel-foreground/60">
+          Récupère l'ID du lobby depuis l'URL ou les logs serveur pendant un test. Utile pour
+          tester le flux de victoire/capture sans attendre les vrais minuteurs de 2/3 minutes.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="lg:w-80 lg:shrink-0">

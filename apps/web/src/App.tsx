@@ -8,6 +8,8 @@ import { WorldMapPage } from "./pages/WorldMapPage";
 import { CityMapPage } from "./pages/CityMapPage";
 import { LeaguePage } from "./pages/LeaguePage";
 import { EncounterPage } from "./pages/EncounterPage";
+import { RaidBrowserPage } from "./pages/RaidBrowserPage";
+import { RaidLobbyPage } from "./pages/RaidLobbyPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { StatsPage } from "./pages/StatsPage";
 import { StarterSelectPage } from "./pages/StarterSelectPage";
@@ -96,6 +98,7 @@ export function App() {
   const transitioning = useExplorationStore((s) => s.transitioning);
   const goToCity = useExplorationStore((s) => s.goToCity);
   const goToLeague = useExplorationStore((s) => s.goToLeague);
+  const goToRaidLobby = useExplorationStore((s) => s.goToRaidLobby);
   const evolutionQueue = useEvolutionStore((s) => s.queue);
   const enqueueEvolutions = useEvolutionStore((s) => s.enqueue);
   const dequeueEvolution = useEvolutionStore((s) => s.dequeue);
@@ -226,6 +229,16 @@ export function App() {
                 screen.returnTo.view === "league" ? goToLeague() : goToCity(screen.returnTo.cityId)
               }
             />
+          )}
+          {screen.view === "raid-browser" && (
+            <RaidBrowserPage
+              hotspotId={screen.hotspotId}
+              onEnterLobby={(lobbyId) => goToRaidLobby(lobbyId, screen.cityId)}
+              onBack={() => goToCity(screen.cityId)}
+            />
+          )}
+          {screen.view === "raid-lobby" && (
+            <RaidLobbyPage lobbyId={screen.lobbyId} onLeave={() => goToCity(screen.cityId)} />
           )}
         </div>
       )}

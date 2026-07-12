@@ -64,7 +64,17 @@ export interface DungeonHotspot {
   encounterTable: EncounterTableEntry[];
 }
 
-export type CityMapHotspot = RouteHotspot | PoiHotspot | DungeonHotspot;
+/** A raid boss lair: opens the raid lobby browser instead of a normal solo encounter.
+ * raidBossKey references the static RAID_BOSS_CATALOG in game/raidBosses.ts. */
+export interface RaidHotspot {
+  kind: "raid";
+  id: string;
+  name: string;
+  shape: HotspotShape;
+  raidBossKey: string;
+}
+
+export type CityMapHotspot = RouteHotspot | PoiHotspot | DungeonHotspot | RaidHotspot;
 
 export interface CityMapConfig {
   id: string;

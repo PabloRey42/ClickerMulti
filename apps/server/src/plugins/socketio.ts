@@ -32,6 +32,21 @@ export default fp(async (fastify: FastifyInstance) => {
 
   io.on("connection", (socket) => {
     fastify.log.info({ userId: socket.data.user?.sub }, "socket connected");
+
+    // Raid lobbies broadcast live state (presence, boss HP, timers) to everyone in
+    // `raid:<lobbyId>` — see modules/raid/raid.timers.ts's broadcastRaidUpdate. Joining the
+    // room is gated on actually being a participant so a stranger can't snoop another
+    // lobby's team comps by guessing an id.
+    socket.on("raid:subscribe", async ({ lobbyId }: { lobbyId?: string }) => {
+      if (!lobbyId || !socket.data.user?.sub) return;
+      const participant = await fastify.prisma.raidParticipant.findUnique({
+        where: { lobbyId_userId: { lobbyId, userId: socket.data.user.sub } },
+      });
+      if (participant) socket.join(`raid:${lobbyId}`);
+    });
+    socket.on("raid:unsubscribe", ({ lobbyId }: { lobbyId?: string }) => {
+      if (lobbyId) socket.leave(`raid:${lobbyId}`);
+    });
   });
 
   fastify.decorate("io", io);
