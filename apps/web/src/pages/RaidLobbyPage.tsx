@@ -48,6 +48,14 @@ export function RaidLobbyPage({ lobbyId, onLeave }: { lobbyId: string; onLeave: 
   useEffect(() => {
     if (!accessToken) return;
     clearSnapshot();
+    // The store is global and the previous lobby's snapshot is still sitting in it during
+    // this very first render (clearSnapshot() above only takes effect on the next render) —
+    // reset these too so a stale WON/LOST snapshot from a raid just left can't misfire the
+    // victory/loss overlay on the new lobby before the fresh fetch below resolves.
+    prevStatusRef.current = null;
+    setShowVictory(false);
+    setShowCaptureReveal(false);
+    setShowLoss(false);
 
     connectSocket();
     const socket = getSocket();
@@ -78,11 +86,14 @@ export function RaidLobbyPage({ lobbyId, onLeave }: { lobbyId: string; onLeave: 
   // animation on every subsequent broadcast, e.g. another participant's late attack landing
   // after the timer already expired the lobby).
   useEffect(() => {
-    if (!snapshot) return;
+    // Also guards against the previous lobby's snapshot (still in the global store on this
+    // component's very first render, before the mount effect's clearSnapshot()/fetch above
+    // has had a chance to run) being mistaken for the current lobby's state.
+    if (!snapshot || snapshot.id !== lobbyId) return;
     if (prevStatusRef.current !== "WON" && snapshot.status === "WON") setShowVictory(true);
     if (prevStatusRef.current !== "LOST" && snapshot.status === "LOST") setShowLoss(true);
     prevStatusRef.current = snapshot.status;
-  }, [snapshot?.status]);
+  }, [snapshot?.status, snapshot?.id, lobbyId]);
 
   async function handleStart() {
     if (!accessToken || busy) return;

@@ -31,6 +31,11 @@ export function RaidCaptureRevealModal({
 }) {
   const species = SPECIES_CATALOG[speciesKey];
   const [spinning, setSpinning] = useState(true);
+  // Starts at 0 and is bumped to the final angle a beat after mount (below) — setting the
+  // target rotation directly on the very first render would paint the wheel already at its
+  // final position with nothing to transition FROM, so it'd just appear stopped instead of
+  // visibly spinning.
+  const [rotation, setRotation] = useState(0);
 
   const finalRotation = useMemo(() => {
     const jitter = (Math.random() - 0.5) * 100;
@@ -40,9 +45,16 @@ export function RaidCaptureRevealModal({
 
   useEffect(() => {
     playRaidCaptureSound(caught);
+    // Double rAF: the first callback fires right before the next paint (still at the initial
+    // 0deg render), the second one fires after that paint has actually committed — only then
+    // is it safe to change the transform and have the CSS transition pick it up.
+    const raf1 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setRotation(finalRotation));
+    });
     const stopTimer = setTimeout(() => setSpinning(false), SPIN_MS);
     const doneTimer = setTimeout(onDone, SPIN_MS + RESULT_HOLD_MS);
     return () => {
+      cancelAnimationFrame(raf1);
       clearTimeout(stopTimer);
       clearTimeout(doneTimer);
     };
@@ -64,7 +76,7 @@ export function RaidCaptureRevealModal({
           <div className="raid-wheel-pointer" />
           <div
             className="raid-wheel"
-            style={{ transform: `rotate(${finalRotation}deg)`, transitionDuration: `${SPIN_MS}ms` }}
+            style={{ transform: `rotate(${rotation}deg)`, transitionDuration: `${SPIN_MS}ms` }}
           />
           <div className="raid-wheel-hub">
             <img
