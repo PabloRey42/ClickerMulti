@@ -21,6 +21,7 @@ import {
   InvalidItemError,
 } from "./admin.service.js";
 import {
+  listActiveLobbiesForAdmin,
   adminForceLobbyTimeout,
   adminSetBossHp,
   RaidLobbyNotFoundError,
@@ -176,6 +177,12 @@ export default async function adminRoutes(fastify: FastifyInstance) {
       if (err instanceof InvalidItemError) return reply.code(400).send({ error: "invalid_item" });
       throw err;
     }
+  });
+
+  // Lists every currently active raid lobby (across every hotspot) so the admin can find a
+  // lobby's id to act on below instead of needing it pasted from a URL or server logs.
+  fastify.get("/admin/raids", async (_request, reply) => {
+    sendJson(reply, await listActiveLobbiesForAdmin(fastify.prisma));
   });
 
   // QA escape hatches for raids: this dev machine has no local Docker/DB, so raids can only

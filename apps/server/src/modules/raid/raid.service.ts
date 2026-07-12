@@ -16,6 +16,7 @@ import {
   type RaidLobbySnapshot,
   type RaidLobbySummary,
   type RaidAttackResponse,
+  type AdminRaidLobbySummary,
 } from "@farm-clicker/shared";
 import {
   lockActiveCreature,
@@ -151,6 +152,29 @@ export async function listOpenLobbiesForHotspot(prisma: PrismaClient, hotspotId:
   }));
 }
 
+/** Admin visibility: every currently active (WAITING/IN_PROGRESS) lobby across every
+ * hotspot, newest first, so the admin panel can list real lobby ids to act on instead of
+ * requiring them to be copied from a URL or server logs. */
+export async function listActiveLobbiesForAdmin(prisma: PrismaClient): Promise<AdminRaidLobbySummary[]> {
+  const lobbies = await prisma.raidLobby.findMany({
+    where: { status: { in: ["WAITING", "IN_PROGRESS"] } },
+    include: { creator: true, _count: { select: { participants: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  return lobbies.map((l) => ({
+    id: l.id,
+    raidBossKey: l.raidBossKey,
+    status: l.status,
+    creatorUsername: l.creator.username,
+    participantCount: l._count.participants,
+    bossCurrentHp: l.bossCurrentHp,
+    bossMaxHp: l.bossMaxHp,
+    createdAt: l.createdAt.toISOString(),
+    startsAt: l.startsAt.toISOString(),
+    battleEndsAt: l.battleEndsAt?.toISOString() ?? null,
+  }));
+}
+
 export async function createLobby(prisma: PrismaClient, userId: string, hotspotId: string): Promise<RaidLobbySnapshot> {
   const hotspot = findRaidHotspot(hotspotId);
   if (!hotspot) throw new RaidHotspotNotFoundError();
@@ -205,10 +229,12 @@ export async function joinLobby(prisma: PrismaClient, userId: string, lobbyId: s
 
 /** Only allowed while WAITING — leaving mid-battle would let a player dodge the boss's
  * counter-damage right before a losing exchange, and would complicate "who fought" for
- * resolveRaidVictory's reward loop. If the creator leaves, reassigns the next-earliest
- * joiner so the lobby isn't stranded without anyone who can manually start it; if the lobby
- * empties out entirely it's left alone and simply self-expires at its startsAt deadline via
- * the usual lazy resolution. */
+ * resolveRaidVictory's reward loop. If the lobby empties out entirely, it's cancelled
+ * (EXPIRED) immediately rather than left to self-expire at its startsAt deadline — so a
+ * fresh lobby can be created at the same hotspot right away instead of the old empty one
+ * sitting around (and still showing up in the browser list) until its timer catches up.
+ * If the creator leaves but others remain, reassigns the next-earliest joiner so the lobby
+ * isn't stranded without anyone who can manually start it. */
 export async function leaveLobby(prisma: PrismaClient, userId: string, lobbyId: string): Promise<RaidLobbySnapshot> {
   const lobby = await prisma.$transaction(async (tx) => {
     const resolved = await loadAndResolve(tx, lobbyId);
@@ -217,6 +243,11 @@ export async function leaveLobby(prisma: PrismaClient, userId: string, lobbyId: 
     if (resolved.status !== "WAITING") throw new RaidLobbyNotJoinableError();
 
     await tx.raidParticipant.delete({ where: { lobbyId_userId: { lobbyId, userId } } });
+
+    const remaining = await tx.raidParticipant.count({ where: { lobbyId } });
+    if (remaining === 0) {
+      return tx.raidLobby.update({ where: { id: lobbyId }, data: { status: "EXPIRED", resolvedAt: new Date() } });
+    }
 
     if (resolved.creatorId === userId) {
       const next = await tx.raidParticipant.findFirst({ where: { lobbyId }, orderBy: { joinedAt: "asc" } });

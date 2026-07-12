@@ -50,3 +50,18 @@ export interface RaidAttackResponse {
   fainted: boolean;
   canSwitch: boolean;
 }
+
+/** Admin panel row — every currently active lobby across every hotspot, so the admin can
+ * find a lobby's id to act on without needing it pasted from a URL or server logs. */
+export interface AdminRaidLobbySummary {
+  id: string;
+  raidBossKey: string;
+  status: RaidLobbyStatus;
+  creatorUsername: string;
+  participantCount: number;
+  bossCurrentHp: number;
+  bossMaxHp: number;
+  createdAt: string;
+  startsAt: string;
+  battleEndsAt: string | null;
+}

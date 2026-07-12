@@ -1,4 +1,9 @@
-import type { AdminUserListResponse, AdminUserDetail, RaidLobbySnapshot } from "@farm-clicker/shared";
+import type {
+  AdminUserListResponse,
+  AdminUserDetail,
+  RaidLobbySnapshot,
+  AdminRaidLobbySummary,
+} from "@farm-clicker/shared";
 import { apiRequest } from "./client";
 
 export function listAdminUsers(accessToken: string) {
@@ -77,6 +82,12 @@ export function deleteAdminUser(accessToken: string, userId: string) {
     method: "DELETE",
     accessToken,
   });
+}
+
+/** Every currently active raid lobby across every hotspot, so the admin panel can list real
+ * lobby ids to act on instead of requiring them to be copied from a URL or server logs. */
+export function listAdminRaidLobbies(accessToken: string) {
+  return apiRequest<AdminRaidLobbySummary[]>("/api/admin/raids", { accessToken });
 }
 
 /** QA escape hatch: fast-forwards a raid lobby's current deadline (auto-start while

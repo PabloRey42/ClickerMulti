@@ -3,8 +3,10 @@ import {
   SPECIES_CATALOG,
   POKEBALL_CATALOG,
   POTION_CATALOG,
+  findRaidBossByKey,
   type AdminUserSummary,
   type AdminUserDetail,
+  type AdminRaidLobbySummary,
 } from "@farm-clicker/shared";
 import { useAuthStore } from "../state/authStore";
 import { ApiError } from "../api/client";
@@ -21,6 +23,7 @@ import {
   deleteAdminCreature,
   setAdminInventoryItem,
   deleteAdminUser,
+  listAdminRaidLobbies,
   forceRaidLobbyTimeout,
   setAdminRaidBossHp,
 } from "../api/admin";
@@ -52,10 +55,12 @@ export function AdminPage() {
   const [itemQuantities, setItemQuantities] = useState<Record<string, string>>({});
   const [raidLobbyIdInput, setRaidLobbyIdInput] = useState("");
   const [raidMessage, setRaidMessage] = useState<string | null>(null);
+  const [raidLobbies, setRaidLobbies] = useState<AdminRaidLobbySummary[]>([]);
 
   useEffect(() => {
     if (!accessToken) return;
     refreshUsers();
+    refreshRaidLobbies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
@@ -64,6 +69,15 @@ export function AdminPage() {
     try {
       const res = await listAdminUsers(accessToken);
       setUsers(res.users);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) logout();
+    }
+  }
+
+  async function refreshRaidLobbies() {
+    if (!accessToken) return;
+    try {
+      setRaidLobbies(await listAdminRaidLobbies(accessToken));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) logout();
     }
@@ -162,6 +176,7 @@ export function AdminPage() {
     handleAction(async () => {
       const lobby = await forceRaidLobbyTimeout(accessToken!, raidLobbyIdInput.trim());
       setRaidMessage(`Lobby -> ${lobby.status}`);
+      await refreshRaidLobbies();
     });
   }
 
@@ -171,6 +186,7 @@ export function AdminPage() {
     handleAction(async () => {
       const lobby = await setAdminRaidBossHp(accessToken!, raidLobbyIdInput.trim(), 0);
       setRaidMessage(`Lobby -> ${lobby.status}`);
+      await refreshRaidLobbies();
     });
   }
 
@@ -193,9 +209,54 @@ export function AdminPage() {
       {error && <p className="mb-3 text-center text-xs font-bold text-stat-hp">{error}</p>}
 
       <div className="mb-4 rounded-xl border-2 border-stat-pp bg-panel p-3">
-        <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-panel-foreground/60">
-          Mode test — Raid boss
-        </h3>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-xs font-black uppercase tracking-widest text-panel-foreground/60">
+            Mode test — Raid boss
+          </h3>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={refreshRaidLobbies}
+            className="rounded-full border border-gold-deep px-2 py-0.5 text-[10px] font-black uppercase text-gold-light disabled:opacity-50"
+          >
+            Actualiser
+          </button>
+        </div>
+
+        <ul className="mb-2 flex flex-col gap-1.5">
+          {raidLobbies.map((lobby) => {
+            const boss = findRaidBossByKey(lobby.raidBossKey);
+            return (
+              <li key={lobby.id}>
+                <button
+                  type="button"
+                  onClick={() => setRaidLobbyIdInput(lobby.id)}
+                  className={[
+                    "flex w-full items-center justify-between gap-2 rounded-lg border-2 px-2 py-1.5 text-left transition-colors",
+                    raidLobbyIdInput === lobby.id
+                      ? "border-gold-light bg-panel-light"
+                      : "border-gold-deep/60 bg-panel-light/40 hover:bg-panel-light",
+                  ].join(" ")}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-extrabold text-gold-light">
+                      {boss?.name ?? lobby.raidBossKey} — {lobby.creatorUsername}
+                    </span>
+                    <span className="block font-mono text-[10px] text-panel-foreground/60">{lobby.id}</span>
+                  </span>
+                  <span className="shrink-0 text-right text-[10px] font-bold text-panel-foreground/60">
+                    <span className="block">{lobby.status}</span>
+                    <span className="block">{lobby.participantCount} dresseur(s)</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+          {raidLobbies.length === 0 && (
+            <p className="text-[10px] font-semibold text-panel-foreground/60">Aucun raid actif pour l'instant.</p>
+          )}
+        </ul>
+
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
@@ -213,7 +274,7 @@ export function AdminPage() {
           {raidMessage && <span className="text-[10px] font-bold text-stat-xp">{raidMessage}</span>}
         </div>
         <p className="mt-2 text-[10px] font-semibold text-panel-foreground/60">
-          Récupère l'ID du lobby depuis l'URL ou les logs serveur pendant un test. Utile pour
+          Clique un raid ci-dessus pour remplir son ID, ou colle-le manuellement. Utile pour
           tester le flux de victoire/capture sans attendre les vrais minuteurs de 2/3 minutes.
         </p>
       </div>
